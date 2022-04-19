@@ -4,7 +4,7 @@ namespace XSpecification.Linq;
 
 public static class ServiceRegistrationExtensions
 {
-    public static IServiceCollection AddLinqSprecification(
+    public static IServiceCollection AddLinqSpecification(
         this IServiceCollection services,
         // ReSharper disable once MethodOverloadWithOptionalParameter
         Action<Options, IServiceProvider>? configure = null)
@@ -19,17 +19,17 @@ public static class ServiceRegistrationExtensions
         return services;
     }
 
-    public static IServiceCollection AddLinqSprecification(
+    public static IServiceCollection AddLinqSpecification(
         this IServiceCollection services,
         // ReSharper disable once MethodOverloadWithOptionalParameter
         Action<Options>? configure = null)
     {
-        return AddLinqSprecification(services, (options, _) => configure?.Invoke(options));
+        return AddLinqSpecification(services, (options, _) => configure?.Invoke(options));
     }
 
-    public static IServiceCollection AddLinqSprecification(
+    public static IServiceCollection AddLinqSpecification(
         this IServiceCollection services)
     {
-        return AddLinqSprecification(services, (Action<Options>?)null);
+        return AddLinqSpecification(services, (Action<Options>?)null);
     }
 }

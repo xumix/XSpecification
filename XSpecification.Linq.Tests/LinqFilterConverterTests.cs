@@ -18,7 +18,7 @@ using XSpecification.Core;
 namespace XSpecification.Linq.Tests
 {
     [TestFixture]
-    public class DbFilterConverterTests
+    public class LinqFilterConverterTests
     {
         private ServiceProvider serviceProvider = null!;
 
@@ -29,7 +29,11 @@ namespace XSpecification.Linq.Tests
             services.AddSingleton<ILogger<LinqTestSpec>>(Substitute.For<ILogger<LinqTestSpec>>());
             services.AddSingleton<ILogger<IncompatibleLinqTestSpec>>(
                 Substitute.For<ILogger<IncompatibleLinqTestSpec>>());
-            services.AddLinqSprecification();
+            services.AddLinqSpecification();
+            // services.AddLinqSpecification(o =>
+            // {
+            //     o.DisableAutoPropertyHandling = true;
+            // });
             services.AddSingleton<LinqTestSpec>();
             services.AddSingleton<UnhandledLinqTestSpec>();
             services.AddSingleton<IncompatibleLinqTestSpec>();
