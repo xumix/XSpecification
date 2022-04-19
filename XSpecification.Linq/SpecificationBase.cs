@@ -15,9 +15,9 @@ namespace XSpecification.Linq
         where TFilter : class, new()
         where TModel : class, new()
     {
-        internal static readonly Expression<Func<TModel, bool>> AlwaysFalseExpression = a => false;
+        protected static readonly Expression<Func<TModel, bool>> AlwaysFalseExpression = a => false;
 
-        internal static readonly Expression<Func<TModel, bool>> DoNothing =
+        protected static readonly Expression<Func<TModel, bool>> DoNothing =
             PredicateBuilder.New<TModel>(true).DefaultExpression;
 
         // ReSharper disable once StaticMemberInGenericType

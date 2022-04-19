@@ -5,17 +5,27 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <LangVersion>10</LangVersion>
+        <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);CopyProjectReferencesToPackage</TargetsForTfmSpecificContentInPackage>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Linq.Expression.Optimizer" Version="1.0.13" />
-      <PackageReference Include="LinqKit.Core" Version="1.2.2" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="6.0.0" />
+        <PackageReference Include="Linq.Expression.Optimizer" Version="1.0.13"/>
+        <PackageReference Include="LinqKit.Core" Version="1.2.2"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="6.0.0"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\XSpecification.Core\XSpecification.Core.csproj" />
+        <ProjectReference Include="..\XSpecification.Core\XSpecification.Core.csproj"/>
     </ItemGroup>
-
+    <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
+        <ItemGroup>
+            <TfmSpecificPackageFile Include="$(OutputPath)\XSpecification.Core.dll">
+                <PackagePath>$(PackagePathDir)\lib\$(TargetFramework)</PackagePath>
+            </TfmSpecificPackageFile>
+        </ItemGroup>
+        <!--        <ItemGroup>-->
+        <!--            <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))"/>-->
+        <!--        </ItemGroup>-->
+    </Target>
 </Project>

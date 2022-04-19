@@ -6,6 +6,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "_Sln", "_Sln", "{01268D9A-F
 		README.md = README.md
 		StyleCop.Analyzers.ruleset = StyleCop.Analyzers.ruleset
 		stylecop.json = stylecop.json
+		Directory.Build.props = Directory.Build.props
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "XSpecification.Core", "XSpecification.Core\XSpecification.Core.csproj", "{9D5A8E3D-7AE0-4625-88C2-573264E9A0CB}"

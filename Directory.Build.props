@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <Authors>xumix</Authors>
+    <Description>XSpecification is an implementation of Specification pattern for Linq and Elasticsearch</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/xumix/XSpecification</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/xumix/XSpecification</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+</Project>

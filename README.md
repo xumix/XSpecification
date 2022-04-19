@@ -16,7 +16,24 @@ public class LinqTestSpec : SpecificationBase<LinqTestModel, LinqTestFilter>
     public LinqTestSpec(ILogger<LinqTestSpec> logger, IOptions<Options> options)
         : base(logger, options)
     {
+        IgnoreField(f => f.Ignored);
         HandleField(f => f.Explicit, m => m.UnmatchingProperty);
+        HandleField(f => f.Conditional, (prop, filter) =>
+        {
+            if (filter.Conditional)
+            {
+                return CreateExpressionFromFilterProperty(prop, f => f.Name, filter.Conditional.ToString());
+            }
+
+            if(!filter.Conditional && filter.Id == 312)
+            {
+                return PredicateBuilder.New<LinqTestModel>()
+                                       .And(f => f.Date.Hour == 1)
+                                       .And(f => f.UnmatchingProperty == 123);
+            }
+
+            return DoNothing;
+        });
     }
 }
 ```

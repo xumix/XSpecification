@@ -5,6 +5,8 @@ using System.Linq;
 using AutoFixture;
 using AutoFixture.Kernel;
 
+using LinqKit;
+
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -125,7 +127,24 @@ namespace XSpecification.Linq.Tests
         public LinqTestSpec(ILogger<LinqTestSpec> logger, IOptions<Options> options)
             : base(logger, options)
         {
-            HandleField(f => f.Explicit, m => m.UnmatchingProperty);
+        IgnoreField(f => f.Ignored);
+        HandleField(f => f.Explicit, m => m.UnmatchingProperty);
+        HandleField(f => f.Conditional, (prop, filter) =>
+        {
+            if (filter.Conditional)
+            {
+                return CreateExpressionFromFilterProperty(prop, f => f.Name, filter.Conditional.ToString());
+            }
+
+            if(!filter.Conditional && filter.Id == 312)
+            {
+                return PredicateBuilder.New<LinqTestModel>()
+                                       .And(f => f.Date.Hour == 1)
+                                       .And(f => f.UnmatchingProperty == 123);
+            }
+
+            return DoNothing;
+        });
         }
     }
 
@@ -176,7 +195,7 @@ namespace XSpecification.Linq.Tests
 
     public class LinqTestFilter
     {
-        public int Id { get; set; }
+        public int? Id { get; set; }
 
         public RangeFilter<int> RangeId { get; set; }
 
@@ -190,13 +209,17 @@ namespace XSpecification.Linq.Tests
 
         public DateTime? NullableDate { get; set; }
 
-        public DateTime Date { get; set; }
+        public DateTime? Date { get; set; }
 
         public ListFilter<DateTime> ListDate { get; set; }
 
         public RangeFilter<DateTime> RangeDate { get; set; }
 
         public ListFilter<int> Explicit { get; set; }
+
+        public bool Conditional { get; set; }
+
+        public string Ignored { get; set; }
     }
 
     public class IncompatibleLinqTestFilter : LinqTestFilter
