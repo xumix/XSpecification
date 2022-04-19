@@ -35,6 +35,33 @@ services.AddSingleton<LinqTestSpec>();
 
 # Using in your code
 ```Csharp
+//Before:
+var filter = new LinqTestFilter
+{
+    Date = DateTime.Today,
+    ComplexName = new StringFilter("complex") { Contains = true },
+    RangeId = new RangeFilter<int> { Start = 0, End = 5 }
+};
+
+var where = PredicateBuilder.New<LinqTestModel>();
+
+if (filter.Date.HasValue)
+{
+    where.And(f => f.Date == filter.Date.Value);
+}
+if (filter.ComplexName != null)
+{
+    where.And(f => f.ComplexName.Contains(filter.ComplexName.Value));
+}
+if (filter.RangeId.HasValue())
+{
+    where.And(f => f.Id >= filter.RangeId.Start && f.Id <= filter.RangeId.End);
+}
+
+dbcontext.Set<LinqTestModel>().Where(where);
+
+
+//After
 // Inject from DI
 var spec = serviceProvider.GetRequiredService<LinqTestSpec>();
 
