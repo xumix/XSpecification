@@ -1,4 +1,51 @@
 # XSpecification is an implementation of Specification pattern for Linq and Elasticsearch
+Implemented filters: **RangeFilter** (BETWEEN x AND y), **ListFilter** (IN(x,y,z)), **StringFilter** (=, LIKE '%x%'), direct comparison, NULL/NOT NULL
+
+This library helps with removing boilerplate code and adds commonly used filtering capabilities, especially if your app has many grids with similar filtering capabilities.
+It could be useful in BL-heavy scenarios when you find yourself writing code like this:
+```
+public class LinqTestFilter
+{
+    public DateTime? Date { get;set }
+    public string Name { get;set }
+    public string NameContains { get;set }
+    public int? IdFrom { get; set; }
+    public int? IdTo { get; set; }
+}
+
+var filter = new LinqTestFilter
+    {
+        Date = DateTime.Today,
+        NameContains = "complex",
+        IdFrom = 0,
+        IdTo = 5
+    };
+
+var where = PredicateBuilder.New<LinqTestModel>();
+if (filter.Date.HasValue)
+{
+    where.And(f => f.Date == filter.Date.Value);
+}
+if (!string.IsNullOrEmpty(filter.Name))
+{
+    where.And(f => f.Name == filter.Name);
+}
+if (!string.IsNullOrEmpty(filter.NameContains))
+{
+    where.And(f => f.ComplexName.Contains(filter.ComplexName.Value));
+}
+if (filter.IdFrom.HasValue())
+{
+    where.And(f => f.Id >= filter.IdFrom);
+}
+if (filter.IdTo.HasValue())
+{
+    where.And(f => f.Id <= filter.IdTo);
+}
+    
+var data = dbcontext.Set<LinqTestModel>().Where(where);
+```
+
 
 # Setup
 Formalize your filter
@@ -9,7 +56,9 @@ public class LinqTestFilter
    public RangeFilter<int> RangeId { get; set; }
 }
 ```
-Create your scpecification
+Create your specification, if a filter property has the same name as in DB model **it will be mapped automatically**
+More examples in the test project.
+
 ```Csharp
 public class LinqTestSpec : SpecificationBase<LinqTestModel, LinqTestFilter>
 {
@@ -46,39 +95,12 @@ services.AddLinqSpecification(o =>
             {
                 o.DisableAutoPropertyHandling = true;
             });
-// add scpecification to your DI
+// add specification to your DI
 services.AddSingleton<LinqTestSpec>();
 ```
 
 # Using in your code
 ```Csharp
-//Before:
-var filter = new LinqTestFilter
-{
-    Date = DateTime.Today,
-    ComplexName = new StringFilter("complex") { Contains = true },
-    RangeId = new RangeFilter<int> { Start = 0, End = 5 }
-};
-
-var where = PredicateBuilder.New<LinqTestModel>();
-
-if (filter.Date.HasValue)
-{
-    where.And(f => f.Date == filter.Date.Value);
-}
-if (filter.ComplexName != null)
-{
-    where.And(f => f.ComplexName.Contains(filter.ComplexName.Value));
-}
-if (filter.RangeId.HasValue())
-{
-    where.And(f => f.Id >= filter.RangeId.Start && f.Id <= filter.RangeId.End);
-}
-
-dbcontext.Set<LinqTestModel>().Where(where);
-
-
-//After
 // Inject from DI
 var spec = serviceProvider.GetRequiredService<LinqTestSpec>();
 
