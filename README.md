@@ -32,13 +32,13 @@ if (!string.IsNullOrEmpty(filter.Name))
 }
 if (!string.IsNullOrEmpty(filter.NameContains))
 {
-    where.And(f => f.ComplexName.Contains(filter.ComplexName.Value));
+    where.And(f => f.Name.Contains(filter.NameContains));
 }
-if (filter.IdFrom.HasValue())
+if (filter.IdFrom.HasValue)
 {
     where.And(f => f.Id >= filter.IdFrom);
 }
-if (filter.IdTo.HasValue())
+if (filter.IdTo.HasValue)
 {
     where.And(f => f.Id <= filter.IdTo);
 }
