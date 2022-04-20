@@ -3,8 +3,8 @@ Implemented filters: **RangeFilter** (BETWEEN x AND y), **ListFilter** (IN(x,y,z
 
 This library helps with removing boilerplate code and adds commonly used filtering capabilities, especially if your app has many grids with similar filtering capabilities.
 It could be useful in BL-heavy scenarios when you find yourself writing code like this:
-```
-public class LinqTestFilter
+```Csharp
+public class SomeApiFilter
 {
     public DateTime? Date { get;set }
     public string Name { get;set }
@@ -13,7 +13,7 @@ public class LinqTestFilter
     public int? IdTo { get; set; }
 }
 
-var filter = new LinqTestFilter
+var filter = new SomeApiFilter
     {
         Date = DateTime.Today,
         NameContains = "complex",
@@ -21,7 +21,7 @@ var filter = new LinqTestFilter
         IdTo = 5
     };
 
-var where = PredicateBuilder.New<LinqTestModel>();
+var where = PredicateBuilder.New<DbModel>();
 if (filter.Date.HasValue)
 {
     where.And(f => f.Date == filter.Date.Value);
@@ -43,7 +43,12 @@ if (filter.IdTo.HasValue())
     where.And(f => f.Id <= filter.IdTo);
 }
     
-var data = dbcontext.Set<LinqTestModel>().Where(where);
+var data = dbcontext.Set<DbModel>().Where(where);
+```
+With XSpecification it becomes this:
+```Csharp
+var expression = spec.CreateFilterExpression(filter);
+var data = dbcontext.Set<DbModel>().Where(expression);
 ```
 
 
@@ -53,7 +58,9 @@ Formalize your filter
 public class LinqTestFilter
 {
    public int Id { get; set; }
-   public RangeFilter<int> RangeId { get; set; }
+   public StringFilter Name { get; set; }
+   public string Explicit { get; set; }
+   public bool Conditional { get; set; }
 }
 ```
 Create your specification, if a filter property has the same name as in DB model **it will be mapped automatically**.
