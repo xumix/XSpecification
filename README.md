@@ -126,8 +126,14 @@ var filter = new LinqTestFilter
 };
 
 var expression = spec.CreateFilterExpression(filter);
-
 var data = dbcontext.Set<LinqTestModel>().Where(expression);
+
+/* will be translated to
+SELECT ... FROM LinqTestModel
+WHERE Date = 'xxxx-xx-xx....' AND Id = 123 AND ComplexName LIKE '%complex%' AND ListDate IN ('xxxx-xx-xx....', 'xxxx-xx-xx....')
+AND ListId IN (1, 2, 3) AND ListName NOT IN ('a', 'b', 'b') AND NullableDate = 'xxxx-xx-xx....'
+AND RangeDate >= 'xxxx-xx-xx....' AND RangeDate <= 'yyyy-yy-yy....' AND RangeId >= 0 AND RangeId <= 5
+*/
 
 ```
 
