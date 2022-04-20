@@ -56,7 +56,7 @@ public class LinqTestFilter
    public RangeFilter<int> RangeId { get; set; }
 }
 ```
-Create your specification, if a filter property has the same name as in DB model **it will be mapped automatically**
+Create your specification, if a filter property has the same name as in DB model **it will be mapped automatically**.
 More examples in the test project.
 
 ```Csharp
@@ -106,16 +106,16 @@ var spec = serviceProvider.GetRequiredService<LinqTestSpec>();
 
 var filter = new LinqTestFilter
 {
-    Date = DateTime.Today,
-    Id = 123,
-    Name = "qwe",
-    ComplexName = new StringFilter("complex") { Contains = true },
-    ListDate = new[] { DateTime.Today, DateTime.Today.AddDays(1) },
-    ListId = new[] { 1, 2, 3 },
-    ListName = new[] { "a", "b", "z" },
-    NullableDate = DateTime.Today.AddDays(-1),
-    RangeDate = new RangeFilter<DateTime> { Start = DateTime.Today, End = DateTime.Today.AddDays(1) },
-    RangeId = new RangeFilter<int> { Start = 0, End = 5 }
+    Date = DateTime.Today, // Date = 'xxxx-xx-xx....'
+    Id = 123, // Id = 123
+    Name = "qwe", // Name = 'qwe'
+    ComplexName = new StringFilter("complex") { Contains = true }, // ComplexName LIKE '%complex%'
+    ListDate = new[] { DateTime.Today, DateTime.Today.AddDays(1) }, // ListDate IN ('xxxx-xx-xx....', 'xxxx-xx-xx....')
+    ListId = new[] { 1, 2, 3 }, // ListId IN (1, 2, 3)
+    ListName = new ListFilter<string>("a", "b", "z") { IsInverted = true }, // ListName NOT IN ('a', 'b', 'b')
+    NullableDate = DateTime.Today.AddDays(-1), // NullableDate = 'xxxx-xx-xx....'
+    RangeDate = new RangeFilter<DateTime> { Start = DateTime.Today, End = DateTime.Today.AddDays(1) }, // RangeDate >= 'xxxx-xx-xx....' AND RangeDate <= 'yyyy-yy-yy....'
+    RangeId = new RangeFilter<int> { Start = 0, End = 5 } // RangeId >= 0 AND RangeId <= 5
 };
 
 var expression = spec.CreateFilterExpression(filter);
