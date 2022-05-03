@@ -3,14 +3,18 @@ namespace XSpecification.Linq;
 
 public sealed class Options
 {
-    internal readonly LinkedList<Type> filterHandlers = new LinkedList<Type>();
+    internal readonly List<Type> filterHandlers = new List<Type>();
+
+    internal readonly List<Type> specifications = new List<Type>();
 
     /// <summary>
-    /// Disables convention-based automatic property handling
+    /// Disables convention-based property handling
     /// </summary>
-    public bool DisableAutoPropertyHandling { get; set; }
+    public bool DisablePropertyAutoHandling { get; set; }
 
     public IList<Type> FilterHandlers => filterHandlers.ToArray();
+
+    public IEnumerable<Type> Specifications => specifications.ToArray();
 
     public void AddFilterHandler<THandler>()
     {
@@ -19,6 +23,16 @@ public sealed class Options
 
     public void AddFilterHandler(Type handlerType)
     {
-        FilterHandlers.Insert(0, handlerType);
+        filterHandlers.Insert(0, handlerType);
+    }
+
+    public void AddSpecification<TSpecification>()
+    {
+        AddSpecification(typeof(TSpecification));
+    }
+
+    public void AddSpecification(params Type[] specTypes)
+    {
+        specifications.AddRange(specTypes);
     }
 }

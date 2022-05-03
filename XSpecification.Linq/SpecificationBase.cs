@@ -11,7 +11,7 @@ using XSpecification.Core;
 
 namespace XSpecification.Linq
 {
-    public abstract class SpecificationBase<TModel, TFilter>
+    public abstract class SpecificationBase<TModel, TFilter> : ISpecification
         where TFilter : class, new()
         where TModel : class, new()
     {
@@ -31,8 +31,8 @@ namespace XSpecification.Linq
                         {
                             nameof(Enumerable.Contains),
                             typeof(Enumerable).GetMethods()
-                                              .First(m => m.Name == nameof(Enumerable.Contains) &&
-                                                          m.GetParameters().Length == 2)
+                                              .First(m => m.Name == nameof(Enumerable.Contains)
+                                                          && m.GetParameters().Length == 2)
                         }
                     }
                 },
@@ -57,7 +57,10 @@ namespace XSpecification.Linq
             };
 
         private static readonly PropertyInfo[] FilterProperties = typeof(TFilter).GetProperties();
-        private static readonly PropertyInfo[] ModelProperties = typeof(TModel).GetProperties();
+
+        private static readonly Dictionary<string, PropertyInfo> ModelProperties = typeof(TModel)
+            .GetProperties()
+            .ToDictionary(s => s.Name);
 
         private readonly ILogger<SpecificationBase<TModel, TFilter>> logger;
         private readonly IOptions<Options> options;
@@ -69,9 +72,8 @@ namespace XSpecification.Linq
             this.logger = logger;
             this.options = options;
 
-            var filterProps = FilterProperties;
-            var entityProps = ModelProperties.Select(s => s.Name).ToArray();
-            var unmatched = filterProps.Select(s => s.Name).Where(f => !entityProps.Contains(f));
+            var unmatched = FilterProperties.Select(s => s.Name)
+                                            .Where(f => !ModelProperties.ContainsKey(f));
 
             UnmatchedProps = new List<string>(unmatched);
             ExplicitHandlers = new Dictionary<string, FilterPropertyHandler>();
@@ -84,46 +86,44 @@ namespace XSpecification.Linq
 
         public virtual Expression<Func<TModel, bool>> CreateFilterExpression(TFilter filter)
         {
-            var res = PredicateBuilder.New<TModel>(true);
+            var context = new ExpressionCreationContext<TModel>();
 
-            if (!options.Value.DisableAutoPropertyHandling)
+            foreach (var filterProperty in FilterProperties)
             {
-                foreach (var filterProp in FilterProperties)
+                context.FilterProperty = filterProperty;
+                context.FilterPropertyValue = filterProperty.GetValue(filter);
+                context.ModelProperty = ModelProperties.ContainsKey(filterProperty.Name)
+                    ? ModelProperties[filterProperty.Name]
+                    : default;
+
+                if (ExplicitHandlers.ContainsKey(filterProperty.Name))
                 {
-                    var sourceValue = filterProp.GetValue(filter);
-
-                    if (ExplicitHandlers.ContainsKey(filterProp.Name))
+                    var handler = ExplicitHandlers[filterProperty.Name](filterProperty, filter);
+                    if (handler != null && handler != DoNothing)
                     {
-                        var handler = ExplicitHandlers[filterProp.Name](filterProp, filter);
-                        if (handler != DoNothing)
-                        {
-                            res = res.And(handler);
-                        }
-
-                        continue;
+                        context.Expression.And(handler);
                     }
 
-                    var indexProp = typeof(TModel).GetProperty(filterProp.Name);
+                    continue;
+                }
 
-                    var defHandler = CreateExpressionFromFilterProperty(filterProp, indexProp, sourceValue);
+                if (options.Value.DisablePropertyAutoHandling)
+                {
+                    continue;
+                }
 
-                    // Do not spoil the result with no-ops
-                    if (defHandler != DoNothing)
-                    {
-                        res = res.And(defHandler);
-                    }
+                var defHandler = CreateExpressionFromFilterProperty(context);
+
+                // Do not spoil the result with no-ops
+                if (defHandler != DoNothing)
+                {
+                    context.Expression.And(defHandler);
                 }
             }
 
-            if (UnmatchedProps?.Any() == true)
-            {
-                throw new InvalidOperationException(
-                    $"Filter '{typeof(TFilter)}' properties " +
-                    $"'{string.Join(",", UnmatchedProps.Select(s => s.ToString()))}'" +
-                    $" are not mapped to entity '{typeof(TModel)}' fields");
-            }
+            CheckUnhandledProperties();
 
-            var optimized = ExpressionOptimizer.tryVisit(res);
+            var optimized = ExpressionOptimizer.tryVisit(context.Expression);
             return (Expression<Func<TModel, bool>>)optimized;
         }
 
@@ -323,23 +323,21 @@ namespace XSpecification.Linq
         }
 
         protected virtual Expression<Func<TModel, bool>> CreateExpressionFromFilterProperty(
-            PropertyInfo filterProp,
-            PropertyInfo? entityProp,
-            object? sourceValue)
+            ExpressionCreationContext<TModel> context)
         {
-            if (entityProp == null)
+            if (context.ModelProperty == null)
             {
                 return DoNothing;
             }
 
             var param = Expression.Parameter(typeof(TModel));
-            var body = Expression.MakeMemberAccess(param, entityProp);
+            var body = Expression.MakeMemberAccess(param, context.ModelProperty);
             var lam = Expression.Lambda(body, param);
 
             var ret = ReflectionHelper.CallGenericMethod(this,
                 nameof(CreateExpressionFromFilterProperty),
-                entityProp.PropertyType,
-                new object?[] { filterProp, lam, sourceValue });
+                context.ModelProperty.PropertyType,
+                new object?[] { context.FilterProperty, lam, context.FilterPropertyValue });
 
             return (Expression<Func<TModel, bool>>)ret!;
         }
@@ -354,21 +352,13 @@ namespace XSpecification.Linq
                 return DoNothing;
             }
 
-            var filterPropType = filterProp.PropertyType;
+            var propertyFilterType = GetPropertyFilterType(filterProp, sourceValue);
 
             try
             {
-                CheckTypeCompatibility<TProperty>(sourceValue, filterPropType);
+                CheckTypeCompatibility(sourceValue, propertyFilterType);
 
-                if (sourceValue is IEnumerable
-                    && !(sourceValue is string)
-                    && !(sourceValue is INullableFilter))
-                {
-                    var valType = filterPropType.GetGenericElementType();
-                    filterPropType = valType;
-                }
-
-                if (typeof(INullableFilter).IsAssignableFrom(filterPropType))
+                if (typeof(INullableFilter).IsAssignableFrom(propertyFilterType))
                 {
                     var nullableFilter = (INullableFilter)sourceValue;
                     var ret = GetNullableExpression(entityProp, nullableFilter);
@@ -378,19 +368,19 @@ namespace XSpecification.Linq
                     }
                 }
 
-                if (typeof(IListFilter).IsAssignableFrom(filterPropType))
+                if (typeof(IListFilter).IsAssignableFrom(propertyFilterType))
                 {
                     var listFilter = (IListFilter)sourceValue;
                     return GetListExpression(entityProp, listFilter);
                 }
 
-                if (typeof(StringFilter).IsAssignableFrom(filterPropType))
+                if (typeof(StringFilter).IsAssignableFrom(propertyFilterType))
                 {
                     var stringFilter = (StringFilter)sourceValue;
                     return GetStringExpression<TModel, TProperty>(entityProp, stringFilter);
                 }
 
-                if (typeof(IRangeFilter).IsAssignableFrom(filterPropType))
+                if (typeof(IRangeFilter).IsAssignableFrom(propertyFilterType))
                 {
                     var rangeFilter = (IRangeFilter)sourceValue;
                     return GetRangeExpression(entityProp, rangeFilter);
@@ -424,11 +414,29 @@ namespace XSpecification.Linq
             HandleField(filterProp, (_, _) => DoNothing);
         }
 
-        protected delegate Expression<Func<TModel, bool>> FilterPropertyHandler(
+        protected delegate Expression<Func<TModel, bool>>? FilterPropertyHandler(
             PropertyInfo prop,
             TFilter filter);
 
-        private static void CheckTypeCompatibility<TProperty>(object sourceValue, Type propType)
+        private static Type GetPropertyFilterType(PropertyInfo filterProp, object sourceValue)
+        {
+            Type filterPropType;
+            if (sourceValue is IEnumerable
+                && !(sourceValue is string)
+                && !(sourceValue is INullableFilter))
+            {
+                var elementType = filterProp.PropertyType.GetGenericElementType();
+                filterPropType = elementType;
+            }
+            else
+            {
+                filterPropType = filterProp.PropertyType;
+            }
+
+            return filterPropType;
+        }
+
+        private static void CheckTypeCompatibility(object sourceValue, Type propType)
         {
             if (!propType.IsInstanceOfType(sourceValue)
                 && !(sourceValue is IEnumerable && propType.GetGenericElementType().IsInstanceOfType(sourceValue)))
@@ -439,5 +447,79 @@ namespace XSpecification.Linq
                     sourceValue.GetType().Name));
             }
         }
+
+        private void CheckUnhandledProperties()
+        {
+            if (!UnmatchedProps.Any())
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"Filter '{typeof(TFilter)}' properties " +
+                $"'{string.Join(",", UnmatchedProps.Select(s => s.ToString()))}'" +
+                $" are not mapped to entity '{typeof(TModel)}' fields");
+        }
+
+        /// <inheritdoc />
+        LambdaExpression ISpecification.CreateFilterExpression(object filter)
+        {
+            return CreateFilterExpression((TFilter)filter);
+        }
     }
+
+    //
+    // public interface IFilterConverter
+    // {
+    //     void CreateExpression<TModel>(ExpressionCreationContext<TModel> context, Action<ExpressionCreationContext<TModel>> next);
+    // }
+    //
+    // public class NullableFilterConverter : IFilterConverter
+    // {
+    //     /// <inheritdoc />
+    //     public virtual void CreateExpression<TModel>(
+    //         ExpressionCreationContext<TModel> context,
+    //         Action<ExpressionCreationContext<TModel>> next)
+    //     {
+    //         if (context.FilterProperty == null ||
+    //             !typeof(INullableFilter).IsAssignableFrom(context.FilterProperty.PropertyType))
+    //         {
+    //             next(context);
+    //             return;
+    //         }
+    //
+    //         var value = (INullableFilter?)context.FilterPropertyValue;
+    //         var ret = GetNullableExpression(context.ModelProperty, value);
+    //         if (ret != default)
+    //         {
+    //             context.Expression.And(ret);
+    //         }
+    //     }
+    //
+    //     protected static Expression<Func<TModel, bool>>? GetNullableExpression<TModel, TProperty>(
+    //         Expression<Func<TModel, TProperty>> prop,
+    //         INullableFilter value)
+    //     {
+    //         if (!typeof(TProperty).IsNullable())
+    //         {
+    //             return value.IsNull ? AlwaysFalseExpression : null;
+    //         }
+    //
+    //         var memberBody = prop.Body;
+    //         var body = value switch
+    //         {
+    //             { IsNull: true } => Expression.Equal(memberBody, Expression.Constant(null, typeof(TProperty))),
+    //             { IsNotNull: true } => Expression.NotEqual(memberBody, Expression.Constant(null, typeof(TProperty))),
+    //             _ => null
+    //         };
+    //
+    //         if (body == null)
+    //         {
+    //             return null;
+    //         }
+    //
+    //         var lam = (Expression<Func<TModel, bool>>)Expression.Lambda(body, prop.Parameters);
+    //         return lam;
+    //     }
+    // }
 }

@@ -24,21 +24,24 @@ namespace XSpecification.Linq.Tests
     {
         private ServiceProvider serviceProvider = null!;
 
-        [SetUp]
+        [OneTimeSetUp]
         public void SetUp()
         {
             var services = new ServiceCollection();
             services.AddSingleton<ILogger<LinqTestSpec>>(Substitute.For<ILogger<LinqTestSpec>>());
             services.AddSingleton<ILogger<IncompatibleLinqTestSpec>>(
                 Substitute.For<ILogger<IncompatibleLinqTestSpec>>());
-            services.AddLinqSpecification();
+
+            services.AddLinqSpecification(options =>
+            {
+                options.AddSpecification<LinqTestSpec>();
+                options.AddSpecification<UnhandledLinqTestSpec>();
+                options.AddSpecification<IncompatibleLinqTestSpec>();
+            });
             // services.AddLinqSpecification(o =>
             // {
             //     o.DisableAutoPropertyHandling = true;
             // });
-            services.AddSingleton<LinqTestSpec>();
-            services.AddSingleton<UnhandledLinqTestSpec>();
-            services.AddSingleton<IncompatibleLinqTestSpec>();
 
             serviceProvider = services.BuildServiceProvider();
         }
@@ -119,6 +122,17 @@ namespace XSpecification.Linq.Tests
                 Throws.InstanceOf<AggregateException>()
                       .And.Message.Contains(nameof(IncompatibleLinqTestFilter.Incompatible)));
         }
+
+        [Test]
+        public void Ensure_Validation_Throws()
+        {
+            Assert.That(() =>
+                {
+                    serviceProvider.ValidateSpecifications();
+                },
+                Throws.InstanceOf<AggregateException>()
+                      .And.Message.Contains(nameof(IncompatibleLinqTestFilter.Incompatible)));
+        }
     }
 
     public class LinqTestSpec : SpecificationBase<LinqTestModel, LinqTestFilter>
@@ -127,24 +141,29 @@ namespace XSpecification.Linq.Tests
         public LinqTestSpec(ILogger<LinqTestSpec> logger, IOptions<Options> options)
             : base(logger, options)
         {
-        IgnoreField(f => f.Ignored);
-        HandleField(f => f.Explicit, m => m.UnmatchingProperty);
-        HandleField(f => f.Conditional, (prop, filter) =>
-        {
-            if (filter.Conditional)
+            IgnoreField(f => f.Ignored);
+            HandleField(f => f.Explicit, m => m.UnmatchingProperty);
+            HandleField(f => f.Conditional, (prop, filter) =>
             {
-                return CreateExpressionFromFilterProperty(prop, f => f.Name, filter.Conditional.ToString());
-            }
+                if (filter.Conditional)
+                {
+                    return CreateExpressionFromFilterProperty(prop, f => f.Name, filter.Conditional.ToString());
+                }
 
-            if(!filter.Conditional && filter.Id == 312)
+                if (!filter.Conditional && filter.Id == 312)
+                {
+                    return PredicateBuilder.New<LinqTestModel>()
+                                           .And(f => f.Date.Hour == 1)
+                                           .And(f => f.UnmatchingProperty == 123);
+                }
+
+                return DoNothing;
+            });
+            HandleField(f => f.NameOrListName, (prop, filter) =>
             {
-                return PredicateBuilder.New<LinqTestModel>()
-                                       .And(f => f.Date.Hour == 1)
-                                       .And(f => f.UnmatchingProperty == 123);
-            }
-
-            return DoNothing;
-        });
+                return CreateExpressionFromFilterProperty(prop, f => f.Name, filter.NameOrListName)
+                    .Or(CreateExpressionFromFilterProperty(prop, f => f.ListName, filter.NameOrListName));
+            });
         }
     }
 
@@ -220,6 +239,8 @@ namespace XSpecification.Linq.Tests
         public bool Conditional { get; set; }
 
         public string Ignored { get; set; }
+
+        public string NameOrListName { get; set; }
     }
 
     public class IncompatibleLinqTestFilter : LinqTestFilter

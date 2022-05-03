@@ -69,26 +69,6 @@ public class StringFilter : ICloneable, INullableFilter
         return new StringFilter(value);
     }
 
-    public static explicit operator StringMatchTypeEnum(StringFilter filter)
-    {
-        if (filter.Contains)
-        {
-            return StringMatchTypeEnum.Contains;
-        }
-
-        if (filter.StartsWith)
-        {
-            return StringMatchTypeEnum.StartsWith;
-        }
-
-        if (filter.EndsWith)
-        {
-            return StringMatchTypeEnum.EndsWith;
-        }
-
-        return StringMatchTypeEnum.Equals;
-    }
-
     public StringFilter Clone()
     {
         return new StringFilter

@@ -22,6 +22,22 @@ namespace XSpecification.Core
             typeof(long)
         };
 
+        public static Type? GetClosedOfOpenGeneric(this Type? toCheck, Type generic)
+        {
+            while (toCheck != null && toCheck != typeof(object))
+            {
+                var cur = toCheck.IsGenericType ? toCheck.GetGenericTypeDefinition() : toCheck;
+                if (generic == cur)
+                {
+                    return toCheck;
+                }
+
+                toCheck = toCheck.BaseType;
+            }
+
+            return null;
+        }
+
         public static PropertyInfo GetPropertyInfo<TObject, TProperty>(Expression<Func<TObject, TProperty>> func)
         {
             var obj = default(TObject);

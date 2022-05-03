@@ -42,7 +42,7 @@ if (filter.IdTo.HasValue)
 {
     where.And(f => f.Id <= filter.IdTo);
 }
-    
+
 var data = dbcontext.Set<DbModel>().Where(where);
 ```
 With XSpecification it becomes this:
@@ -97,7 +97,7 @@ public class LinqTestSpec : SpecificationBase<LinqTestModel, LinqTestFilter>
 Add XSpecification to your DI in Startup.cs or Program.cs
 ```Csharp
 services.AddLinqSpecification();
-//or optionally disable auto property handling
+//or optionally disable convention-based property handling
 services.AddLinqSpecification(o =>
             {
                 o.DisableAutoPropertyHandling = true;
