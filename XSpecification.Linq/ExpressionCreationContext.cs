@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Linq.Expressions;
+using System.Reflection;
 
 using LinqKit;
 
@@ -8,9 +9,11 @@ public abstract class ExpressionCreationContext
 {
     public PropertyInfo? FilterProperty { get; set; }
 
+    public object? FilterPropertyValue { get; set; }
+
     public PropertyInfo? ModelProperty { get; set; }
 
-    public object? FilterPropertyValue { get; set; }
+    public LambdaExpression? ModelPropertyExpression { get; set; }
 }
 
 public class ExpressionCreationContext<TModel> : ExpressionCreationContext

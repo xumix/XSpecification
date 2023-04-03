@@ -157,7 +157,7 @@ namespace XSpecification.Linq.Tests
                                            .And(f => f.UnmatchingProperty == 123);
                 }
 
-                return DoNothing;
+                return null;
             });
             HandleField(f => f.NameOrListName, (prop, filter) =>
             {
