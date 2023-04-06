@@ -3,9 +3,9 @@ using System.Reflection;
 
 using LinqKit;
 
-namespace XSpecification.Linq;
+namespace XSpecification.Linq.Pipeline;
 
-public abstract class ExpressionCreationContext
+public abstract class Context
 {
     public PropertyInfo? FilterProperty { get; set; }
 
@@ -16,9 +16,9 @@ public abstract class ExpressionCreationContext
     public LambdaExpression? ModelPropertyExpression { get; set; }
 }
 
-public class ExpressionCreationContext<TModel> : ExpressionCreationContext
+public class Context<TModel> : Context
 {
-    public ExpressionCreationContext()
+    public Context()
     {
         Expression = PredicateBuilder.New<TModel>(true);
     }

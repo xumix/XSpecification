@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using XSpecification.Core;
+using XSpecification.Linq.Pipeline;
 
 namespace XSpecification.Linq;
 
@@ -67,15 +68,18 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
             return lam;
         });
 
-    private readonly ILogger<SpecificationBase<TModel, TFilter>> logger;
-    private readonly IOptions<Options> options;
+    private readonly ILogger<SpecificationBase<TModel, TFilter>> _logger;
+    private readonly IFilterHandlerPipeline<TModel> _handlerPipeline;
+    private readonly IOptions<Options> _options;
 
     protected SpecificationBase(
         ILogger<SpecificationBase<TModel, TFilter>> logger,
-        IOptions<Options> options)
+        IOptions<Options> options,
+        IFilterHandlerPipeline<TModel> handlerPipeline)
     {
-        this.logger = logger;
-        this.options = options;
+        _logger = logger;
+        _handlerPipeline = handlerPipeline;
+        _options = options;
 
         var unmatched = FilterProperties.Select(s => s.Name)
                                         .Where(f => !ModelProperties.ContainsKey(f));
@@ -85,7 +89,7 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
     }
 
     // ReSharper disable once MemberCanBePrivate.Global
-    protected IList<string> UnmatchedProps { get; }
+    protected internal IList<string> UnmatchedProps { get; }
 
     protected IDictionary<string, FilterPropertyHandler> ExplicitHandlers { get; }
 
@@ -95,7 +99,7 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
 
         foreach (var filterProperty in FilterProperties)
         {
-            var context = new ExpressionCreationContext<TModel>();
+            var context = new Context<TModel>();
 
             context.FilterProperty = filterProperty;
             context.FilterPropertyValue = filterProperty.GetValue(filter);
@@ -117,7 +121,7 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
                 continue;
             }
 
-            if (options.Value.DisablePropertyAutoHandling)
+            if (_options.Value.DisablePropertyAutoHandling)
             {
                 continue;
             }
@@ -325,8 +329,7 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
         }
         catch (Exception e)
         {
-            throw new AggregateException($"Unable add filter field handler: {filterProp}, property already handled",
-                e);
+            throw new AggregateException($"Unable add filter field handler: {filterProp}, property already handled", e);
         }
 
         var valueGetter = filterProp.Compile();
@@ -338,21 +341,21 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
     }
 
     protected virtual Expression<Func<TModel, bool>>? CreateExpressionFromFilterProperty(
-        ExpressionCreationContext<TModel> context)
+        Context<TModel> context)
     {
         if (context.ModelProperty == null)
         {
             return null;
         }
 
-        var modelPropertyExpression = ModelPropertyExpressions[context.ModelProperty.Name];
+        _handlerPipeline.Start(context);
 
-        var ret = ReflectionHelper.CallGenericMethod(this,
+        var ret = ReflectionHelper.CallStaticGenericMethod(this,
             nameof(CreateExpressionFromFilterProperty),
             context.ModelProperty.PropertyType,
-            new object?[] { context.FilterProperty, modelPropertyExpression, context.FilterPropertyValue });
+            new object?[] { context.FilterProperty, context.ModelPropertyExpression, context.FilterPropertyValue });
 
-        return (Expression<Func<TModel, bool>>)ret!;
+        return (Expression<Func<TModel, bool>>?)ret;
     }
 
     protected virtual Expression<Func<TModel, bool>>? CreateExpressionFromFilterProperty<TProperty>(
@@ -405,7 +408,13 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
 
                 foreach (var val in enumerable)
                 {
-                    start = start.Or(CreateExpressionFromFilterProperty(filterProp, modelProp, val));
+                    var elExp = CreateExpressionFromFilterProperty(filterProp, modelProp, val);
+                    if (elExp == null)
+                    {
+                        continue;
+                    }
+
+                    start = start.Or(elExp);
                 }
 
                 return start.IsStarted ? start : null;
@@ -416,7 +425,7 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
         catch (Exception e)
         {
             var format = "Unable to create filter {2} for property: {0}, model field: {1}";
-            logger.LogError(format, filterProp.Name, modelProp.Name, GetType());
+            _logger.LogError(e, format, filterProp.Name, modelProp.Name, GetType());
             throw new AggregateException(string.Format(format, filterProp.Name, modelProp.Body, GetType().Name),
                 e);
         }

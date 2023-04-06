@@ -81,7 +81,7 @@ namespace XSpecification.Core
             return !type.IsValueType || Nullable.GetUnderlyingType(type) != null;
         }
 
-        public static object? CallGenericMethod(
+        public static object? CallStaticGenericMethod(
             object instance,
             string methodName,
             Type genericMethodArgs,

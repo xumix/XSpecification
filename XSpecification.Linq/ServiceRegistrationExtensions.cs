@@ -1,47 +1,43 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 
 using XSpecification.Core;
+using XSpecification.Linq.Handlers;
+using XSpecification.Linq.Pipeline;
 
 namespace XSpecification.Linq;
 
 public static class ServiceRegistrationExtensions
 {
-    public static IServiceCollection AddLinqSpecification(
+    public static OptionsBuilder<Options> AddLinqSpecification(
         this IServiceCollection services,
         // ReSharper disable once MethodOverloadWithOptionalParameter
-        Action<Options> configure)
+        Action<IRegistrationConfigurator> configure)
     {
-        var builder = services.AddOptions<Options>();
-        var options = new Options();
 
-        //options.AddFilterHandler<>();
+        var configurator = new RegistrationConfigurator();
 
-        configure(options);
+        configurator.FilterHandlers.AddLast(typeof(ConstantFilterHandler));
+        configurator.FilterHandlers.AddLast(typeof(NullableFilterHandler));
 
-        foreach (var specification in options.Specifications)
+        configure(configurator);
+
+        services.AddSingleton(typeof(IFilterHandlerPipeline<>), typeof(FilterHandlerPipeline<>));
+        services.AddSingleton(configurator.FilterHandlers);
+
+        foreach (var handler in configurator.FilterHandlers)
+        {
+            services.AddSingleton(handler);
+        }
+
+        foreach (var specification in configurator.Specifications)
         {
             services.AddTransient(typeof(ISpecification), specification);
             services.AddSingleton(specification);
         }
 
-        return services;
+        return services.AddOptions<Options>();
     }
-
-    // public static IServiceCollection AddLinqSpecification(
-    //     this IServiceCollection services,
-    //     // ReSharper disable once MethodOverloadWithOptionalParameter
-    //     Action<Options>? configure = null)
-    // {
-    //     return AddLinqSpecification(services, (options, _) =>
-    //     {
-    //         configure?.Invoke(options);
-    //         foreach (var specification in options.Specifications)
-    //         {
-    //             services.AddScoped(typeof(ISpecification), specification);
-    //             services.AddSingleton(specification);
-    //         }
-    //     });
-    // }
 
     public static void ValidateSpecifications(this IServiceProvider serviceProvider)
     {
@@ -73,4 +69,12 @@ public static class ServiceRegistrationExtensions
             throw new AggregateException(agg);
         }
     }
+}
+
+public class Options
+{
+    /// <summary>
+    /// Disables convention-based property handling
+    /// </summary>
+    public bool DisablePropertyAutoHandling { get; set; }
 }

@@ -16,13 +16,14 @@ using NSubstitute;
 using NUnit.Framework;
 
 using XSpecification.Core;
+using XSpecification.Linq.Pipeline;
 
 namespace XSpecification.Linq.Tests
 {
     [TestFixture]
     public class LinqFilterConverterTests
     {
-        private ServiceProvider serviceProvider = null!;
+        private ServiceProvider _serviceProvider = null!;
 
         [OneTimeSetUp]
         public void SetUp()
@@ -32,24 +33,28 @@ namespace XSpecification.Linq.Tests
             services.AddSingleton<ILogger<IncompatibleLinqTestSpec>>(
                 Substitute.For<ILogger<IncompatibleLinqTestSpec>>());
 
-            services.AddLinqSpecification(options =>
+            services.AddLinqSpecification(cfg =>
             {
-                options.AddSpecification<LinqTestSpec>();
-                options.AddSpecification<UnhandledLinqTestSpec>();
-                options.AddSpecification<IncompatibleLinqTestSpec>();
+                cfg.AddSpecification<LinqTestSpec>();
+                cfg.AddSpecification<UnhandledLinqTestSpec>();
+                cfg.AddSpecification<IncompatibleLinqTestSpec>();
             });
+
+            services.AddTransient(typeof(ISpecification), typeof(LinqTestSpec));
+            services.AddSingleton(typeof(LinqTestSpec));
+
             // services.AddLinqSpecification(o =>
             // {
             //     o.DisableAutoPropertyHandling = true;
             // });
 
-            serviceProvider = services.BuildServiceProvider();
+            _serviceProvider = services.BuildServiceProvider();
         }
 
         [Test]
         public void Ensure_Converters_Dont_Throw()
         {
-            var spec = serviceProvider.GetRequiredService<LinqTestSpec>();
+            var spec = _serviceProvider.GetRequiredService<LinqTestSpec>();
 
             var fixture = new Fixture();
             fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
@@ -66,7 +71,7 @@ namespace XSpecification.Linq.Tests
         [Test]
         public void Ensure_Filtering_Doesnt_Throw()
         {
-            var spec = serviceProvider.GetRequiredService<LinqTestSpec>();
+            var spec = _serviceProvider.GetRequiredService<LinqTestSpec>();
 
             var filter = new LinqTestFilter
             {
@@ -97,7 +102,7 @@ namespace XSpecification.Linq.Tests
         [Test]
         public void Ensure_Unhandled_Throws()
         {
-            var spec = serviceProvider.GetRequiredService<UnhandledLinqTestSpec>();
+            var spec = _serviceProvider.GetRequiredService<UnhandledLinqTestSpec>();
 
             var filter = new LinqTestFilter();
 
@@ -111,7 +116,7 @@ namespace XSpecification.Linq.Tests
         [Test]
         public void Ensure_Incompatible_Throws()
         {
-            var spec = serviceProvider.GetRequiredService<IncompatibleLinqTestSpec>();
+            var spec = _serviceProvider.GetRequiredService<IncompatibleLinqTestSpec>();
 
             var filter = new IncompatibleLinqTestFilter { Incompatible = new ListFilter<int> { 1, 2 } };
 
@@ -128,7 +133,7 @@ namespace XSpecification.Linq.Tests
         {
             Assert.That(() =>
                 {
-                    serviceProvider.ValidateSpecifications();
+                    _serviceProvider.ValidateSpecifications();
                 },
                 Throws.InstanceOf<AggregateException>()
                       .And.Message.Contains(nameof(IncompatibleLinqTestFilter.Incompatible)));
@@ -138,8 +143,8 @@ namespace XSpecification.Linq.Tests
     public class LinqTestSpec : SpecificationBase<LinqTestModel, LinqTestFilter>
     {
         /// <inheritdoc />
-        public LinqTestSpec(ILogger<LinqTestSpec> logger, IOptions<Options> options)
-            : base(logger, options)
+        public LinqTestSpec(ILogger<LinqTestSpec> logger, IOptions<Options> options, IFilterHandlerPipeline<LinqTestModel> handlerPipeline)
+            : base(logger, options, handlerPipeline)
         {
             IgnoreField(f => f.Ignored);
             HandleField(f => f.Explicit, m => m.UnmatchingProperty);
@@ -161,8 +166,15 @@ namespace XSpecification.Linq.Tests
             });
             HandleField(f => f.NameOrListName, (prop, filter) =>
             {
-                return CreateExpressionFromFilterProperty(prop, f => f.Name, filter.NameOrListName)
-                    .Or(CreateExpressionFromFilterProperty(prop, f => f.ListName, filter.NameOrListName));
+                var ne = CreateExpressionFromFilterProperty(prop, f => f.Name, filter.NameOrListName);
+                var le = CreateExpressionFromFilterProperty(prop, f => f.ListName, filter.NameOrListName);
+
+                if (ne != null && le != null)
+                {
+                    return ne.Or(le);
+                }
+
+                return ne ?? le;
             });
         }
     }
@@ -170,8 +182,8 @@ namespace XSpecification.Linq.Tests
     public class UnhandledLinqTestSpec : SpecificationBase<LinqTestModel, LinqTestFilter>
     {
         /// <inheritdoc />
-        public UnhandledLinqTestSpec(ILogger<LinqTestSpec> logger, IOptions<Options> options)
-            : base(logger, options)
+        public UnhandledLinqTestSpec(ILogger<LinqTestSpec> logger, IOptions<Options> options, IFilterHandlerPipeline<LinqTestModel> handlerPipeline)
+            : base(logger, options, handlerPipeline)
         {
         }
     }
@@ -179,8 +191,8 @@ namespace XSpecification.Linq.Tests
     public class IncompatibleLinqTestSpec : SpecificationBase<LinqTestModel, IncompatibleLinqTestFilter>
     {
         /// <inheritdoc />
-        public IncompatibleLinqTestSpec(ILogger<IncompatibleLinqTestSpec> logger, IOptions<Options> options)
-            : base(logger, options)
+        public IncompatibleLinqTestSpec(ILogger<IncompatibleLinqTestSpec> logger, IOptions<Options> options, IFilterHandlerPipeline<LinqTestModel> handlerPipeline)
+            : base(logger, options, handlerPipeline)
         {
             HandleField(f => f.Explicit, m => m.UnmatchingProperty);
             HandleField(f => f.Incompatible, m => m.RangeDate);

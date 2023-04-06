@@ -4,8 +4,8 @@ namespace XSpecification.Linq;
 
 internal class ParameterVisitor : ExpressionVisitor
 {
-    private readonly ParameterExpression[] from;
-    private readonly ParameterExpression[] to;
+    private readonly ParameterExpression[] _from;
+    private readonly ParameterExpression[] _to;
 
     public ParameterVisitor(IEnumerable<ParameterExpression> from, IEnumerable<ParameterExpression> to)
     {
@@ -24,8 +24,8 @@ internal class ParameterVisitor : ExpressionVisitor
             throw new InvalidOperationException("Parameter lengths must match");
         }
 
-        this.@from = @from.ToArray();
-        this.to = to.ToArray();
+        _from = @from.ToArray();
+        _to = to.ToArray();
     }
 
     public static LambdaExpression Merge(LambdaExpression fromExpression, LambdaExpression toExpression, Func<Expression, Expression, Expression> mergeFunc)
@@ -63,11 +63,11 @@ internal class ParameterVisitor : ExpressionVisitor
 
     protected override Expression VisitParameter(ParameterExpression node)
     {
-        for (var i = 0; i < @from.Length; i++)
+        for (var i = 0; i < _from.Length; i++)
         {
-            if (node == @from[i])
+            if (node == _from[i])
             {
-                return to[i];
+                return _to[i];
             }
         }
 
