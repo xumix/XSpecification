@@ -99,17 +99,6 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
 
         foreach (var filterProperty in FilterProperties)
         {
-            var context = new Context<TModel>();
-
-            context.FilterProperty = filterProperty;
-            context.FilterPropertyValue = filterProperty.GetValue(filter);
-            context.ModelProperty = ModelProperties.ContainsKey(filterProperty.Name)
-                ? ModelProperties[filterProperty.Name]
-                : default;
-            context.ModelPropertyExpression = context.ModelProperty != null
-                ? ModelPropertyExpressions[context.ModelProperty.Name]
-                : null;
-
             if (ExplicitHandlers.ContainsKey(filterProperty.Name))
             {
                 var handler = ExplicitHandlers[filterProperty.Name](filterProperty, filter);
@@ -126,7 +115,7 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
                 continue;
             }
 
-            var defHandler = CreateExpressionFromFilterProperty(context);
+            var defHandler = CreateExpressionFromFilterProperty(filterProperty, filter);
             // Do not spoil the result with no-ops
             if (defHandler != null)
             {
@@ -340,30 +329,37 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
         };
     }
 
-    protected virtual Expression<Func<TModel, bool>>? CreateExpressionFromFilterProperty(
-        Context<TModel> context)
+    protected virtual Expression<Func<TModel, bool>>? CreateExpressionFromFilterProperty(PropertyInfo filterProperty, object? filter)
     {
-        if (context.ModelProperty == null)
+        var modelProperty = ModelProperties.ContainsKey(filterProperty.Name)
+            ? ModelProperties[filterProperty.Name]
+            : default;
+        var modelPropertyExpression = modelProperty != null
+            ? ModelPropertyExpressions[modelProperty.Name]
+            : null;
+
+        var sourceValue = filterProperty.GetValue(filter);
+
+        if (modelProperty == null || sourceValue == null
+           || sourceValue as string == string.Empty)
         {
             return null;
         }
 
-        _handlerPipeline.Start(context);
-
         var ret = ReflectionHelper.CallStaticGenericMethod(this,
             nameof(CreateExpressionFromFilterProperty),
-            context.ModelProperty.PropertyType,
-            new object?[] { context.FilterProperty, context.ModelPropertyExpression, context.FilterPropertyValue });
+            modelProperty.PropertyType,
+            new object?[] { filterProperty, modelPropertyExpression, sourceValue });
 
         return (Expression<Func<TModel, bool>>?)ret;
     }
 
     protected virtual Expression<Func<TModel, bool>>? CreateExpressionFromFilterProperty<TProperty>(
         PropertyInfo filterProp,
-        Expression<Func<TModel, TProperty>> modelProp,
+        Expression<Func<TModel, TProperty>>? modelProp,
         object? sourceValue)
     {
-        if (sourceValue == null || sourceValue as string == string.Empty)
+        if (modelProp == null || sourceValue == null || sourceValue as string == string.Empty)
         {
             return null;
         }
@@ -374,53 +370,16 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
         {
             CheckTypeCompatibility(sourceValue, propertyFilterType);
 
-            if (typeof(INullableFilter).IsAssignableFrom(propertyFilterType))
-            {
-                var nullableFilter = (INullableFilter)sourceValue;
-                var ret = GetNullableExpression(modelProp, nullableFilter);
-                if (ret != null)
-                {
-                    return ret;
-                }
-            }
+            var context = new Context<TModel>();
 
-            if (typeof(IListFilter).IsAssignableFrom(propertyFilterType))
-            {
-                var listFilter = (IListFilter)sourceValue;
-                return GetListExpression(modelProp, listFilter);
-            }
+            context.FilterProperty = filterProp;
+            context.FilterPropertyValue = sourceValue;
+            context.ModelProperty = (modelProp.Body as MemberExpression).Member as PropertyInfo;
+            context.ModelPropertyExpression = modelProp;
 
-            if (typeof(StringFilter).IsAssignableFrom(propertyFilterType))
-            {
-                var stringFilter = (StringFilter)sourceValue;
-                return GetStringExpression<TModel, TProperty>(modelProp, stringFilter);
-            }
+            _handlerPipeline.Start(context);
 
-            if (typeof(IRangeFilter).IsAssignableFrom(propertyFilterType))
-            {
-                var rangeFilter = (IRangeFilter)sourceValue;
-                return GetRangeExpression(modelProp, rangeFilter);
-            }
-
-            if (sourceValue is IEnumerable enumerable && !(sourceValue is string))
-            {
-                var start = PredicateBuilder.New<TModel>(true);
-
-                foreach (var val in enumerable)
-                {
-                    var elExp = CreateExpressionFromFilterProperty(filterProp, modelProp, val);
-                    if (elExp == null)
-                    {
-                        continue;
-                    }
-
-                    start = start.Or(elExp);
-                }
-
-                return start.IsStarted ? start : null;
-            }
-
-            return GetConstantExpression(modelProp, sourceValue);
+            return context.Expression;
         }
         catch (Exception e)
         {
@@ -445,7 +404,7 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
         Type filterPropType;
         if (sourceValue is IEnumerable
             && sourceValue is not string
-            && sourceValue is not INullableFilter)
+            && sourceValue is not IFilter)
         {
             var elementType = filterProp.PropertyType.GetGenericElementType();
             filterPropType = elementType;

@@ -12,29 +12,22 @@ public static class ServiceRegistrationExtensions
     public static OptionsBuilder<Options> AddLinqSpecification(
         this IServiceCollection services,
         // ReSharper disable once MethodOverloadWithOptionalParameter
-        Action<IRegistrationConfigurator> configure)
+        Action<IRegistrationConfigurator> configureAction)
     {
 
-        var configurator = new RegistrationConfigurator();
-
-        configurator.FilterHandlers.AddLast(typeof(ConstantFilterHandler));
-        configurator.FilterHandlers.AddLast(typeof(NullableFilterHandler));
-
-        configure(configurator);
-
+        var configurator = new RegistrationConfigurator(services);
         services.AddSingleton(typeof(IFilterHandlerPipeline<>), typeof(FilterHandlerPipeline<>));
         services.AddSingleton(configurator.FilterHandlers);
 
-        foreach (var handler in configurator.FilterHandlers)
-        {
-            services.AddSingleton(handler);
-        }
+        configurator.FilterHandlers.AddLast(typeof(ConstantFilterHandler));
+        configurator.FilterHandlers.AddLast(typeof(EnumerableFilterHandler));
+        configurator.FilterHandlers.AddLast(typeof(NullableFilterHandler));
+        configurator.FilterHandlers.AddLast(typeof(ListFilterHandler));
+        configurator.FilterHandlers.AddLast(typeof(StringFilterHandler));
+        configurator.FilterHandlers.AddLast(typeof(RangeFilterHandler));
 
-        foreach (var specification in configurator.Specifications)
-        {
-            services.AddTransient(typeof(ISpecification), specification);
-            services.AddSingleton(specification);
-        }
+        configureAction(configurator);
+        configurator.Configure();
 
         return services.AddOptions<Options>();
     }

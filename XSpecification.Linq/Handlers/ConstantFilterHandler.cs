@@ -8,25 +8,26 @@ namespace XSpecification.Linq.Handlers;
 public class ConstantFilterHandler : IFilterHandler
 {
     /// <inheritdoc />
-    public virtual void CreateExpression<TModel>(
-        Context<TModel> context,
-        Action<Context<TModel>> next)
+    public virtual void CreateExpression<TModel>(Context<TModel> context, Action<Context<TModel>> next)
     {
-        var ret = GetConstantExpression(context);
+        var ret = GetExpression<TModel>(context.FilterProperty!.PropertyType,
+            context.ModelPropertyExpression!,
+            context.FilterPropertyValue);
         context.Expression.And(ret);
         next(context);
     }
 
     public virtual bool CanHandle<TModel>(Context<TModel> context)
     {
-        return true;
+        return context.FilterPropertyValue is not IFilter;
     }
 
-    protected static Expression<Func<TModel, bool>>? GetConstantExpression<TModel>(Context<TModel> context)
+    protected internal static Expression<Func<TModel, bool>> GetExpression<TModel>(
+        Type filterPropertyType,
+        LambdaExpression propAccessor,
+        object? value)
     {
-        var propAccessor = context.ModelPropertyExpression!;
-        var value = context.FilterPropertyValue;
-        var body = Expression.Equal(propAccessor.Body, Expression.Constant(value, context.FilterProperty!.PropertyType));
+        var body = Expression.Equal(propAccessor.Body, Expression.Constant(value, propAccessor.Body.Type));
         var lam = (Expression<Func<TModel, bool>>)Expression.Lambda(body, propAccessor.Parameters);
         return lam;
     }

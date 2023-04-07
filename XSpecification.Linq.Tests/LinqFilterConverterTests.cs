@@ -1,22 +1,22 @@
 #nullable disable
 using System;
+using System.Collections;
 using System.Linq;
 
 using AutoFixture;
 using AutoFixture.Kernel;
 
-using LinqKit;
+using FluentAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 using NSubstitute;
 
 using NUnit.Framework;
 
 using XSpecification.Core;
-using XSpecification.Linq.Pipeline;
+using XSpecification.Linq.Handlers;
 
 namespace XSpecification.Linq.Tests
 {
@@ -38,10 +38,16 @@ namespace XSpecification.Linq.Tests
                 cfg.AddSpecification<LinqTestSpec>();
                 cfg.AddSpecification<UnhandledLinqTestSpec>();
                 cfg.AddSpecification<IncompatibleLinqTestSpec>();
-            });
 
-            services.AddTransient(typeof(ISpecification), typeof(LinqTestSpec));
-            services.AddSingleton(typeof(LinqTestSpec));
+                cfg.FilterHandlers.AddBefore<ConstantFilterHandler>(typeof(TestFilterHandler));
+                cfg.FilterHandlers.AddAfter<NullableFilterHandler>(typeof(TestFilterHandler2));
+
+                // for coverage
+                var enumerator = ((IEnumerable)cfg.FilterHandlers).GetEnumerator();
+                enumerator.MoveNext();
+                enumerator.Current.Should().NotBeNull();
+                enumerator.Reset();
+            });
 
             // services.AddLinqSpecification(o =>
             // {
@@ -94,9 +100,28 @@ namespace XSpecification.Linq.Tests
                    .ForEach(b => fixture.Behaviors.Remove(b));
             fixture.Behaviors.Add(new OmitOnRecursionBehavior(2));
             var context = new SpecimenContext(fixture);
-            var models = context.CreateMany<LinqTestModel>(10);
+            var models = context.CreateMany<LinqTestModel>(10).ToArray();
 
-            var filtered = models.AsQueryable().Where(expression).ToArray();
+            models.AsQueryable().Where(expression).ToArray();
+
+            filter.RangeId = new RangeFilter<int> { Start = null, End = 5 };
+            filter.ListId = new ListFilter<int>();
+            filter.ComplexName = new StringFilter("complex");
+
+            expression = spec.CreateFilterExpression(filter);
+            models.AsQueryable().Where(expression).ToArray();
+
+            filter.RangeId = new RangeFilter<int>();
+            filter.ComplexName = new StringFilter { IsNull = true };
+
+            expression = spec.CreateFilterExpression(filter);
+            models.AsQueryable().Where(expression).ToArray();
+
+            filter.RangeId = filter.RangeId = new RangeFilter<int> { End = null, Start = 5 };
+            filter.ComplexName = new StringFilter { IsNotNull = true };
+
+            expression = spec.CreateFilterExpression(filter);
+            models.AsQueryable().Where(expression).ToArray();
         }
 
         [Test]
@@ -138,125 +163,5 @@ namespace XSpecification.Linq.Tests
                 Throws.InstanceOf<AggregateException>()
                       .And.Message.Contains(nameof(IncompatibleLinqTestFilter.Incompatible)));
         }
-    }
-
-    public class LinqTestSpec : SpecificationBase<LinqTestModel, LinqTestFilter>
-    {
-        /// <inheritdoc />
-        public LinqTestSpec(ILogger<LinqTestSpec> logger, IOptions<Options> options, IFilterHandlerPipeline<LinqTestModel> handlerPipeline)
-            : base(logger, options, handlerPipeline)
-        {
-            IgnoreField(f => f.Ignored);
-            HandleField(f => f.Explicit, m => m.UnmatchingProperty);
-            HandleField(f => f.Conditional, (prop, filter) =>
-            {
-                if (filter.Conditional)
-                {
-                    return CreateExpressionFromFilterProperty(prop, f => f.Name, filter.Conditional.ToString());
-                }
-
-                if (!filter.Conditional && filter.Id == 312)
-                {
-                    return PredicateBuilder.New<LinqTestModel>()
-                                           .And(f => f.Date.Hour == 1)
-                                           .And(f => f.UnmatchingProperty == 123);
-                }
-
-                return null;
-            });
-            HandleField(f => f.NameOrListName, (prop, filter) =>
-            {
-                var ne = CreateExpressionFromFilterProperty(prop, f => f.Name, filter.NameOrListName);
-                var le = CreateExpressionFromFilterProperty(prop, f => f.ListName, filter.NameOrListName);
-
-                if (ne != null && le != null)
-                {
-                    return ne.Or(le);
-                }
-
-                return ne ?? le;
-            });
-        }
-    }
-
-    public class UnhandledLinqTestSpec : SpecificationBase<LinqTestModel, LinqTestFilter>
-    {
-        /// <inheritdoc />
-        public UnhandledLinqTestSpec(ILogger<LinqTestSpec> logger, IOptions<Options> options, IFilterHandlerPipeline<LinqTestModel> handlerPipeline)
-            : base(logger, options, handlerPipeline)
-        {
-        }
-    }
-
-    public class IncompatibleLinqTestSpec : SpecificationBase<LinqTestModel, IncompatibleLinqTestFilter>
-    {
-        /// <inheritdoc />
-        public IncompatibleLinqTestSpec(ILogger<IncompatibleLinqTestSpec> logger, IOptions<Options> options, IFilterHandlerPipeline<LinqTestModel> handlerPipeline)
-            : base(logger, options, handlerPipeline)
-        {
-            HandleField(f => f.Explicit, m => m.UnmatchingProperty);
-            HandleField(f => f.Incompatible, m => m.RangeDate);
-        }
-    }
-
-    public class LinqTestModel
-    {
-        public int Id { get; set; }
-
-        public int RangeId { get; set; }
-
-        public int ListId { get; set; }
-
-        public string Name { get; set; }
-
-        public string ListName { get; set; }
-
-        public string ComplexName { get; set; }
-
-        public DateTime? NullableDate { get; set; }
-
-        public DateTime Date { get; set; }
-
-        public DateTime ListDate { get; set; }
-
-        public DateTime? RangeDate { get; set; }
-
-        public int UnmatchingProperty { get; set; }
-    }
-
-    public class LinqTestFilter
-    {
-        public int? Id { get; set; }
-
-        public RangeFilter<int> RangeId { get; set; }
-
-        public ListFilter<int> ListId { get; set; }
-
-        public string Name { get; set; }
-
-        public ListFilter<string> ListName { get; set; }
-
-        public StringFilter ComplexName { get; set; }
-
-        public DateTime? NullableDate { get; set; }
-
-        public DateTime? Date { get; set; }
-
-        public ListFilter<DateTime> ListDate { get; set; }
-
-        public RangeFilter<DateTime> RangeDate { get; set; }
-
-        public ListFilter<int> Explicit { get; set; }
-
-        public bool Conditional { get; set; }
-
-        public string Ignored { get; set; }
-
-        public string NameOrListName { get; set; }
-    }
-
-    public class IncompatibleLinqTestFilter : LinqTestFilter
-    {
-        public ListFilter<int> Incompatible { get; set; }
     }
 }

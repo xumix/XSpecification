@@ -8,7 +8,7 @@ namespace XSpecification.Linq.Pipeline;
 internal sealed class FilterHandlerCollectionEnumerator : IEnumerator, IEnumerator<Type>
 {
     private readonly LinkedListNode<Type>? _first;
-    private LinkedListNode<Type> _current;
+    private LinkedListNode<Type>? _current;
     private bool _ended;
 
     /// <summary>
@@ -24,7 +24,7 @@ internal sealed class FilterHandlerCollectionEnumerator : IEnumerator, IEnumerat
     object IEnumerator.Current => _current?.Value ?? throw new InvalidOperationException();
 
     /// <inheritdoc />
-    public Type? Current => _current?.Value ?? throw new InvalidOperationException();
+    public Type Current => _current?.Value ?? throw new InvalidOperationException();
 
     /// <inheritdoc />
     public bool MoveNext()

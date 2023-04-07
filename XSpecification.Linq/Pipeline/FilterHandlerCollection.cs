@@ -4,7 +4,7 @@ namespace XSpecification.Linq.Pipeline;
 
 internal class FilterHandlerCollection : LinkedList<Type>, IFilterHandlerCollection
 {
-    public void AddAfter<TFilter>()
+    public void AddAfter<TFilter>(Type filterHandler)
     {
         var type = typeof(TFilter);
         var node = Find(type);
@@ -13,10 +13,10 @@ internal class FilterHandlerCollection : LinkedList<Type>, IFilterHandlerCollect
             throw new ArgumentException($"Unable to find filter {type} in pipeline.");
         }
 
-        AddAfter(node, type);
+        AddAfter(node, filterHandler);
     }
 
-    public void AddBefore<TFilter>()
+    public void AddBefore<TFilter>(Type filterHandler)
     {
         var type = typeof(TFilter);
         var node = Find(type);
@@ -25,7 +25,7 @@ internal class FilterHandlerCollection : LinkedList<Type>, IFilterHandlerCollect
             throw new ArgumentException($"Unable to find filter {type} in pipeline.");
         }
 
-        AddBefore(node, type);
+        AddBefore(node, filterHandler);
     }
 
     /// <inheritdoc/>

@@ -8,30 +8,20 @@ namespace XSpecification.Linq.Handlers;
 public class NullableFilterHandler : IFilterHandler
 {
     /// <inheritdoc />
-    public virtual void CreateExpression<TModel>(
-        Context<TModel> context,
-        Action<Context<TModel>> next)
+    public virtual void CreateExpression<TModel>(Context<TModel> context, Action<Context<TModel>> next)
     {
-        if (CanHandle(context))
-        {
-            return;
-        }
-
-        var ret = GetNullableExpression(context);
+        var ret = GetExpression(context);
         if (ret != default)
         {
             context.Expression.And(ret);
         }
-        else
-        {
-            next(context);
-        }
+
+        next(context);
     }
 
     public virtual bool CanHandle<TModel>(Context<TModel> context)
     {
-        if (context.FilterProperty == null || context.ModelPropertyExpression == null
-            || !typeof(INullableFilter).IsAssignableFrom(context.FilterProperty.PropertyType))
+        if (!typeof(INullableFilter).IsAssignableFrom(context.FilterProperty.PropertyType))
         {
             return false;
         }
@@ -39,9 +29,9 @@ public class NullableFilterHandler : IFilterHandler
         return true;
     }
 
-    protected static Expression<Func<TModel, bool>>? GetNullableExpression<TModel>(Context<TModel> context)
+    protected static Expression<Func<TModel, bool>>? GetExpression<TModel>(Context<TModel> context)
     {
-        var propAccessor = context.ModelPropertyExpression;
+        var propAccessor = context.ModelPropertyExpression!;
         var propertyType = context.ModelProperty!.PropertyType;
         var value = (INullableFilter)context.FilterPropertyValue!;
 

@@ -78,7 +78,13 @@ public sealed class ListFilter<T> : IListFilter, IReadOnlyCollection<T>
     /// <summary>
     ///  Filter values
     /// </summary>
-    internal List<T>? Values { get; set; }
+    public List<T>? Values { get; set; }
+
+    IEnumerable? IListFilter.Values
+    {
+        get => Values;
+        set => Values = (List<T>?)value;
+    }
 
     public static implicit operator ListFilter<T>(T value)
     {
