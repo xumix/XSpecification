@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
-using System.Reflection;
+
+using Microsoft.Extensions.Logging;
 
 using XSpecification.Core;
 using XSpecification.Linq.Pipeline;
@@ -8,12 +9,20 @@ namespace XSpecification.Linq.Handlers;
 
 public class RangeFilterHandler : IFilterHandler
 {
+    private readonly ILogger<RangeFilterHandler> _logger;
+
+    public RangeFilterHandler(ILogger<RangeFilterHandler> logger)
+    {
+        _logger = logger;
+    }
+
     /// <inheritdoc />
     public virtual void CreateExpression<TModel>(Context<TModel> context, Action<Context<TModel>> next)
     {
         var ret = GetExpression(context);
         if (ret != default)
         {
+            _logger.LogDebug("Created Range expression: {Expression}", ret.Body);
             context.Expression.And(ret);
         }
 
@@ -30,7 +39,7 @@ public class RangeFilterHandler : IFilterHandler
         return true;
     }
 
-    protected static Expression<Func<TModel, bool>>? GetExpression<TModel>(Context<TModel> context)
+    protected internal Expression<Func<TModel, bool>>? GetExpression<TModel>(Context<TModel> context)
     {
         var propAccessor = context.ModelPropertyExpression!;
         var rangeFilter = (IRangeFilter)context.FilterPropertyValue!;
@@ -50,29 +59,29 @@ public class RangeFilterHandler : IFilterHandler
         var param = Expression.Parameter(typeof(TModel));
         var memberBody = new ParameterVisitor(propAccessor.Parameters, new[] { param }).Visit(propAccessor.Body)!;
 
-        var constant = Expression.Constant(rangeFilter);
-        var start = Expression.Property(constant, nameof(IRangeFilter.Start));
-        var end = Expression.Property(constant, nameof(IRangeFilter.End));
+        var elementType = rangeFilter.ElementType;
 
-        if (!memberBody.Type.IsNullable()
-            && start.Type.IsNullable())
+        if (memberBody.Type.IsNullable())
         {
-            memberBody = Expression.Convert(memberBody, start.Type);
+            elementType = typeof(Nullable<>).MakeGenericType(elementType);
         }
 
-        var more = rangeFilter.IsExclusive
-            ? Expression.GreaterThan(memberBody, start)
-            : Expression.GreaterThanOrEqual(memberBody, start);
+        var start = () => Expression.Constant(rangeFilter.Start, elementType);
+        var end = () => Expression.Constant(rangeFilter.End, elementType);
 
-        var less = rangeFilter.IsExclusive
-            ? Expression.LessThan(memberBody, end)
-            : Expression.LessThanOrEqual(memberBody, end);
+        var more = () => rangeFilter.IsExclusive
+            ? Expression.GreaterThan(memberBody, start())
+            : Expression.GreaterThanOrEqual(memberBody, start());
+
+        var less = () => rangeFilter.IsExclusive
+            ? Expression.LessThan(memberBody, end())
+            : Expression.LessThanOrEqual(memberBody, end());
 
         Expression? body = (rangeFilter.Start != null, rangeFilter.End != null) switch
         {
-            (true, true) => Expression.AndAlso(more, less),
-            (true, _) => more,
-            (_, true) => less,
+            (true, true) => Expression.AndAlso(more(), less()),
+            (true, _) => more(),
+            (_, true) => less(),
             _ => null
         };
 

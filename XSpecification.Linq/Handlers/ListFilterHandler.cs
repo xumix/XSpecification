@@ -1,6 +1,8 @@
 ﻿using System.Linq.Expressions;
 using System.Reflection;
 
+using Microsoft.Extensions.Logging;
+
 using XSpecification.Core;
 using XSpecification.Linq.Pipeline;
 
@@ -8,6 +10,8 @@ namespace XSpecification.Linq.Handlers;
 
 public class ListFilterHandler : IFilterHandler
 {
+    private readonly ILogger<ListFilterHandler> _logger;
+
     private static readonly IDictionary<string, MethodInfo> TypeMethods =
         new Dictionary<string, MethodInfo>
         {
@@ -25,12 +29,18 @@ public class ListFilterHandler : IFilterHandler
             }
         };
 
+    public ListFilterHandler(ILogger<ListFilterHandler> logger)
+    {
+        _logger = logger;
+    }
+
     /// <inheritdoc />
     public virtual void CreateExpression<TModel>(Context<TModel> context, Action<Context<TModel>> next)
     {
         var ret = GetExpression(context);
         if (ret != default)
         {
+            _logger.LogDebug("Created List expression: {Expression}", ret.Body);
             context.Expression.And(ret);
         }
 

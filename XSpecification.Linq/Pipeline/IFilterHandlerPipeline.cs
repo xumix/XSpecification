@@ -6,5 +6,5 @@ public interface IFilterHandlerPipeline<TModel>
     /// Invoke the pipeline to the end, or until an exception is thrown.
     /// </summary>
     /// <param name="context">The creation context.</param>
-    void Start(Context<TModel> context);
+    void Execute(Context<TModel> context);
 }

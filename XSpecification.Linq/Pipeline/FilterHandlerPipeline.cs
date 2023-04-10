@@ -25,7 +25,7 @@ internal class FilterHandlerPipeline<TModel> : IFilterHandlerPipeline<TModel>
     }
 
     /// <inheritdoc />
-    public void Start(Context<TModel> ctxt)
+    public void Execute(Context<TModel> ctxt)
     {
         _entryPoint ??= BuildPipeline();
         _entryPoint?.Invoke(ctxt);

@@ -1,5 +1,7 @@
 ﻿using System.Linq.Expressions;
 
+using Microsoft.Extensions.Logging;
+
 using XSpecification.Core;
 using XSpecification.Linq.Pipeline;
 
@@ -7,6 +9,13 @@ namespace XSpecification.Linq.Handlers;
 
 public class ConstantFilterHandler : IFilterHandler
 {
+    private readonly ILogger<ConstantFilterHandler> _logger;
+
+    public ConstantFilterHandler(ILogger<ConstantFilterHandler> logger)
+    {
+        _logger = logger;
+    }
+
     /// <inheritdoc />
     public virtual void CreateExpression<TModel>(Context<TModel> context, Action<Context<TModel>> next)
     {
@@ -14,6 +23,9 @@ public class ConstantFilterHandler : IFilterHandler
             context.ModelPropertyExpression!,
             context.FilterPropertyValue);
         context.Expression.And(ret);
+
+        _logger.LogDebug("Created Constant expression: {Expression}", ret.Body);
+
         next(context);
     }
 

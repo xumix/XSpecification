@@ -1,5 +1,7 @@
 ﻿using System.Linq.Expressions;
 
+using Microsoft.Extensions.Logging;
+
 using XSpecification.Core;
 using XSpecification.Linq.Pipeline;
 
@@ -7,16 +9,26 @@ namespace XSpecification.Linq.Handlers;
 
 public class NullableFilterHandler : IFilterHandler
 {
+    private readonly ILogger<NullableFilterHandler> _logger;
+
+    public NullableFilterHandler(ILogger<NullableFilterHandler> logger)
+    {
+        _logger = logger;
+    }
+
     /// <inheritdoc />
     public virtual void CreateExpression<TModel>(Context<TModel> context, Action<Context<TModel>> next)
     {
         var ret = GetExpression(context);
         if (ret != default)
         {
+            _logger.LogDebug("Created Nullable expression: {Expression}", ret.Body);
             context.Expression.And(ret);
         }
-
-        next(context);
+        else
+        {
+            next(context);
+        }
     }
 
     public virtual bool CanHandle<TModel>(Context<TModel> context)

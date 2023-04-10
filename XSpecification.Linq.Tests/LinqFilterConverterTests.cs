@@ -11,8 +11,6 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-using NSubstitute;
-
 using NUnit.Framework;
 
 using XSpecification.Core;
@@ -29,9 +27,11 @@ namespace XSpecification.Linq.Tests
         public void SetUp()
         {
             var services = new ServiceCollection();
-            services.AddSingleton<ILogger<LinqTestSpec>>(Substitute.For<ILogger<LinqTestSpec>>());
-            services.AddSingleton<ILogger<IncompatibleLinqTestSpec>>(
-                Substitute.For<ILogger<IncompatibleLinqTestSpec>>());
+            services.AddLogging(c =>
+            {
+                c.AddConsole().AddDebug();
+                c.SetMinimumLevel(LogLevel.Trace);
+            });
 
             services.AddLinqSpecification(cfg =>
             {
@@ -69,9 +69,11 @@ namespace XSpecification.Linq.Tests
             fixture.Customize<INullableFilter>(c => c.With(f => f.IsNull, false).With(f => f.IsNotNull, false));
 
             var context = new SpecimenContext(fixture);
-            var filter = context.Create<LinqTestFilter>();
-
-            var expression = spec.CreateFilterExpression(filter);
+            for (var i = 0; i < 10; i++)
+            {
+                var filter = context.Create<LinqTestFilter>();
+                var expression = spec.CreateFilterExpression(filter);
+            }
         }
 
         [Test]

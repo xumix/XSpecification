@@ -4,6 +4,8 @@ using System.Reflection;
 
 using LinqKit;
 
+using Microsoft.Extensions.Logging;
+
 using XSpecification.Core;
 using XSpecification.Linq.Pipeline;
 
@@ -11,6 +13,8 @@ namespace XSpecification.Linq.Handlers;
 
 public class EnumerableFilterHandler : IFilterHandler
 {
+    private readonly ILogger<EnumerableFilterHandler> _logger;
+
     private static readonly IDictionary<string, MethodInfo> TypeMethods =
         new Dictionary<string, MethodInfo>
         {
@@ -24,9 +28,14 @@ public class EnumerableFilterHandler : IFilterHandler
                 nameof(Enumerable.Cast), typeof(Enumerable)
                                          .GetMethods()
                                          .First(m => m.Name == nameof(Enumerable.Cast) &&
-                                                     m.GetParameters().Length == 2)
+                                                     m.GetParameters().Length == 1)
             }
         };
+
+    public EnumerableFilterHandler(ILogger<EnumerableFilterHandler> logger)
+    {
+        _logger = logger;
+    }
 
     /// <inheritdoc />
     public virtual void CreateExpression<TModel>(Context<TModel> context, Action<Context<TModel>> next)
@@ -34,6 +43,8 @@ public class EnumerableFilterHandler : IFilterHandler
         var ret = GetExpression(context);
         if (ret != default)
         {
+            _logger.LogDebug("Created Enumerable expression: {Expression}", ret.Body);
+
             context.Expression.And(ret);
         }
 
@@ -43,7 +54,7 @@ public class EnumerableFilterHandler : IFilterHandler
     public virtual bool CanHandle<TModel>(Context<TModel> context)
     {
         var value = context.FilterPropertyValue!;
-        return value is IEnumerable && !(value is string);
+        return value is IEnumerable && value is not string && value is not IListFilter;
     }
 
     protected internal static Expression<Func<TModel, bool>>? GetExpression<TModel>(Context<TModel> context)
@@ -52,20 +63,16 @@ public class EnumerableFilterHandler : IFilterHandler
         var propertyType = context.ModelProperty!.PropertyType;
         var enumerable = (IEnumerable)context.FilterPropertyValue!;
 
-        var start = PredicateBuilder.New<TModel>(true);
+        var containsMethod = TypeMethods[nameof(Enumerable.Contains)];
+        var castMethod = TypeMethods[nameof(Enumerable.Cast)];
+        var castedValue = castMethod.MakeGenericMethod(propertyType).Invoke(null, new object?[] { enumerable });
+        var constant = Expression.Constant(castedValue, typeof(IEnumerable<>).MakeGenericType(propertyType));
 
-        foreach (var val in enumerable)
-        {
-            var elExp = ConstantFilterHandler.GetExpression<TModel>(propertyType, propAccessor, val);
-            if (elExp == null)
-            {
-                continue;
-            }
+        Expression body =
+            Expression.Call(containsMethod.MakeGenericMethod(propertyType), constant, propAccessor.Body);
 
-            start = start.Or(elExp);
-        }
-
-        return start.IsStarted ? start : null;
+        var lam = (Expression<Func<TModel, bool>>)Expression.Lambda(body, propAccessor.Parameters);
+        return lam;
     }
 
 
