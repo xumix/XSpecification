@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -7,20 +8,28 @@ namespace XSpecification.Core
     {
         public const BindingFlags CommonFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
-        private static readonly HashSet<Type> NumericTypes = new HashSet<Type>
-        {
-            typeof(double),
-            typeof(float),
-            typeof(decimal),
-            typeof(byte),
-            typeof(sbyte),
-            typeof(ushort),
-            typeof(uint),
-            typeof(ulong),
-            typeof(short),
-            typeof(int),
-            typeof(long)
-        };
+        private static readonly IDictionary<string, MethodInfo> TypeMethods =
+            new Dictionary<string, MethodInfo>
+            {
+                {
+                    nameof(Enumerable.Contains), typeof(Enumerable)
+                                                 .GetMethods()
+                                                 .First(m => m.Name == nameof(Enumerable.Contains) &&
+                                                             m.GetParameters().Length == 2)
+                },
+                {
+                    nameof(Enumerable.Cast), typeof(Enumerable)
+                                             .GetMethods()
+                                             .First(m => m.Name == nameof(Enumerable.Cast) &&
+                                                         m.GetParameters().Length == 1)
+                },
+                {
+                    nameof(Enumerable.ToArray), typeof(Enumerable)
+                                             .GetMethods()
+                                             .First(m => m.Name == nameof(Enumerable.ToArray) &&
+                                                         m.GetParameters().Length == 1)
+                }
+            };
 
         public static Type? GetClosedOfOpenGeneric(this Type? toCheck, Type generic)
         {
@@ -81,6 +90,21 @@ namespace XSpecification.Core
             return !type.IsValueType || Nullable.GetUnderlyingType(type) != null;
         }
 
+        public static IList? ToArray(this IEnumerable? enumerable, Type type)
+        {
+            if (enumerable == null)
+            {
+                return null;
+            }
+
+            var castMethod = TypeMethods[nameof(Enumerable.Cast)];
+            var arrayMethod = TypeMethods[nameof(Enumerable.ToArray)];
+            var castedValue = castMethod.MakeGenericMethod(type)
+                                        .Invoke(null, new object?[] { enumerable });
+
+            return (IList)arrayMethod.MakeGenericMethod(type).Invoke(null, new object?[] { castedValue })!;
+        }
+
         public static object? CallGenericMethod(
             object instance,
             string methodName,
@@ -135,24 +159,6 @@ namespace XSpecification.Core
 
                 type = type.BaseType;
             }
-        }
-
-        public static bool IsNumeric(this Type type)
-        {
-            return NumericTypes.Contains(type) || NumericTypes.Contains(Nullable.GetUnderlyingType(type)!);
-        }
-
-        /// <summary>
-        /// Аналог default(type)
-        /// </summary>
-        public static object? GetDefaultValue(this Type type)
-        {
-            if (type.IsValueType)
-            {
-                return Activator.CreateInstance(type);
-            }
-
-            return null;
         }
 
         private static MethodInfo GetMethodInfo(

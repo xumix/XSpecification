@@ -138,6 +138,6 @@ AND RangeDate >= 'xxxx-xx-xx....' AND RangeDate <= 'yyyy-yy-yy....' AND RangeId 
 ```
 
 # TODO
-* Add extension points for new filter types
-* Refactor Expression creation logic to Chain of responsipility
+* ~~Add extension points for new filter types~~
+* ~~Refactor Expression creation logic to Chain of responsipility~~
 * Add Elasticsearch implementation

@@ -13,6 +13,9 @@ public class IncompatibleLinqTestSpec : SpecificationBase<LinqTestModel, Incompa
         : base(logger, options, handlerPipeline)
     {
         HandleField(f => f.Explicit, m => m.UnmatchingProperty);
+        IgnoreField(f => f.Ignored);
+        IgnoreField(f => f.NameOrListName);
+        IgnoreField(f => f.Conditional);
         HandleField(f => f.Incompatible, m => m.RangeDate);
     }
 }

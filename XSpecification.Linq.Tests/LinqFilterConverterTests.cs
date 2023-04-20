@@ -8,6 +8,10 @@ using AutoFixture.Kernel;
 
 using FluentAssertions;
 
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -49,6 +53,14 @@ namespace XSpecification.Linq.Tests
                 enumerator.Reset();
             });
 
+            services.AddDbContext<TestContext>((prov, builder) =>
+            {
+                builder.UseLoggerFactory(prov.GetRequiredService<ILoggerFactory>());
+                builder.UseSqlite("DataSource=file::memory:?cache=shared")
+                       .EnableSensitiveDataLogging()
+                       .EnableDetailedErrors();
+            });
+
             // services.AddLinqSpecification(o =>
             // {
             //     o.DisableAutoPropertyHandling = true;
@@ -81,6 +93,9 @@ namespace XSpecification.Linq.Tests
         {
             var spec = _serviceProvider.GetRequiredService<LinqTestSpec>();
 
+            using var dbContext = _serviceProvider.GetRequiredService<TestContext>();
+            dbContext.Database.EnsureCreated();
+
             var filter = new LinqTestFilter
             {
                 Date = DateTime.Today,
@@ -105,6 +120,10 @@ namespace XSpecification.Linq.Tests
             var models = context.CreateMany<LinqTestModel>(10).ToArray();
 
             models.AsQueryable().Where(expression).ToArray();
+            dbContext.TestModels.AddRange(models);
+            dbContext.SaveChanges();
+
+            dbContext.TestModels.Where(expression).ToArray();
 
             filter.RangeId = new RangeFilter<int> { Start = null, End = 5 };
             filter.ListId = new ListFilter<int>();
@@ -112,18 +131,21 @@ namespace XSpecification.Linq.Tests
 
             expression = spec.CreateFilterExpression(filter);
             models.AsQueryable().Where(expression).ToArray();
+            dbContext.TestModels.Where(expression).ToArray();
 
             filter.RangeId = new RangeFilter<int>();
             filter.ComplexName = new StringFilter { IsNull = true };
 
             expression = spec.CreateFilterExpression(filter);
             models.AsQueryable().Where(expression).ToArray();
+            dbContext.TestModels.Where(expression).ToArray();
 
             filter.RangeId = filter.RangeId = new RangeFilter<int> { End = null, Start = 5 };
             filter.ComplexName = new StringFilter { IsNotNull = true };
 
             expression = spec.CreateFilterExpression(filter);
             models.AsQueryable().Where(expression).ToArray();
+            dbContext.TestModels.Where(expression).ToArray();
         }
 
         [Test]
@@ -163,7 +185,7 @@ namespace XSpecification.Linq.Tests
                     _serviceProvider.ValidateSpecifications();
                 },
                 Throws.InstanceOf<AggregateException>()
-                      .And.Message.Contains(nameof(IncompatibleLinqTestFilter.Incompatible)));
+                      .And.Message.Contains("are not mapped"));
         }
     }
 }

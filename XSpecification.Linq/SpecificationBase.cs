@@ -150,17 +150,16 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
             return null;
         }
 
-        var propertyFilterType = GetPropertyFilterType(filterProp, sourceValue);
-
         try
         {
+            var propertyFilterType = GetPropertyFilterType(filterProp, sourceValue);
             CheckTypeCompatibility(sourceValue, propertyFilterType);
 
             var context = new Context<TModel>
             {
                 FilterProperty = filterProp,
                 FilterPropertyValue = sourceValue,
-                ModelProperty = (modelProp.Body as MemberExpression).Member as PropertyInfo,
+                ModelProperty = (modelProp.Body as MemberExpression)!.Member as PropertyInfo,
                 ModelPropertyExpression = modelProp
             };
 

@@ -39,7 +39,9 @@ public class ConstantFilterHandler : IFilterHandler
         LambdaExpression propAccessor,
         object? value)
     {
-        var body = Expression.Equal(propAccessor.Body, Expression.Constant(value, propAccessor.Body.Type));
+        var valueExpr = ExpressionExtensions.CreateClousre(value, propAccessor.Body.Type);
+
+        var body = Expression.Equal(propAccessor.Body, valueExpr);
         var lam = (Expression<Func<TModel, bool>>)Expression.Lambda(body, propAccessor.Parameters);
         return lam;
     }

@@ -31,7 +31,7 @@ public class RangeFilterHandler : IFilterHandler
 
     public virtual bool CanHandle<TModel>(Context<TModel> context)
     {
-        if (!typeof(IRangeFilter).IsAssignableFrom(context.FilterProperty.PropertyType))
+        if (!typeof(IRangeFilter).IsAssignableFrom(context.FilterProperty!.PropertyType))
         {
             return false;
         }
@@ -66,8 +66,8 @@ public class RangeFilterHandler : IFilterHandler
             elementType = typeof(Nullable<>).MakeGenericType(elementType);
         }
 
-        var start = () => Expression.Constant(rangeFilter.Start, elementType);
-        var end = () => Expression.Constant(rangeFilter.End, elementType);
+        var start = () => ExpressionExtensions.CreateClousre(rangeFilter.Start, elementType);
+        var end = () => ExpressionExtensions.CreateClousre(rangeFilter.End, elementType);
 
         var more = () => rangeFilter.IsExclusive
             ? Expression.GreaterThan(memberBody, start())

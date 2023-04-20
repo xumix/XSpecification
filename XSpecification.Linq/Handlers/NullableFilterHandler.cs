@@ -33,7 +33,7 @@ public class NullableFilterHandler : IFilterHandler
 
     public virtual bool CanHandle<TModel>(Context<TModel> context)
     {
-        if (!typeof(INullableFilter).IsAssignableFrom(context.FilterProperty.PropertyType))
+        if (!typeof(INullableFilter).IsAssignableFrom(context.FilterProperty!.PropertyType))
         {
             return false;
         }

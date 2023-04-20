@@ -46,7 +46,7 @@ public class StringFilterHandler : IFilterHandler
 
     public virtual bool CanHandle<TModel>(Context<TModel> context)
     {
-        if (!typeof(StringFilter).IsAssignableFrom(context.FilterProperty.PropertyType))
+        if (!typeof(StringFilter).IsAssignableFrom(context.FilterProperty!.PropertyType))
         {
             return false;
         }
@@ -72,8 +72,7 @@ public class StringFilterHandler : IFilterHandler
             _ => null
         };
 
-        var constant = Expression.Constant(filter);
-        var value = Expression.MakeMemberAccess(constant, filter.GetMemberInfo(f => f.Value));
+        var value = ExpressionExtensions.CreateClousre(filter.Value, typeof(string));
         var memberBody = propAccessor.Body;
 
         Expression body;
