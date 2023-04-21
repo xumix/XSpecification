@@ -11,6 +11,6 @@ public static class ExpressionExtensions
     public static Expression CreateClousre(object? value, Type targetType)
     {
         Expression<Func<object?>> valueExpr = () => value;
-        return Expression.Convert(valueExpr.Body, targetType);
+        return valueExpr.Body.Type == targetType ? valueExpr.Body : Expression.Convert(valueExpr.Body, targetType);
     }
 }
