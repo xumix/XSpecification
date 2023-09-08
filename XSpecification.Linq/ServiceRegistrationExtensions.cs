@@ -2,8 +2,11 @@
 using Microsoft.Extensions.Options;
 
 using XSpecification.Core;
+using XSpecification.Core.Pipeline;
 using XSpecification.Linq.Handlers;
 using XSpecification.Linq.Pipeline;
+
+using Options = XSpecification.Core.Options;
 
 namespace XSpecification.Linq;
 
@@ -15,7 +18,7 @@ public static class ServiceRegistrationExtensions
         Action<IRegistrationConfigurator> configureAction)
     {
 
-        var configurator = new RegistrationConfigurator(services);
+        var configurator = new RegistrationConfigurator<ISpecification, LinqFilterHandlerCollection>(services);
         services.AddSingleton(typeof(IFilterHandlerPipeline<>), typeof(FilterHandlerPipeline<>));
         services.AddSingleton(configurator.FilterHandlers);
 
@@ -62,12 +65,4 @@ public static class ServiceRegistrationExtensions
             throw new AggregateException(agg);
         }
     }
-}
-
-public class Options
-{
-    /// <summary>
-    /// Disables convention-based property handling
-    /// </summary>
-    public bool DisablePropertyAutoHandling { get; set; }
 }

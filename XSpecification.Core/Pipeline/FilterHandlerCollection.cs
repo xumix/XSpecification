@@ -1,8 +1,8 @@
 ﻿using System.Collections;
 
-namespace XSpecification.Linq.Pipeline;
+namespace XSpecification.Core.Pipeline;
 
-internal class FilterHandlerCollection : LinkedList<Type>, IFilterHandlerCollection
+public abstract class FilterHandlerCollection : LinkedList<Type>, IFilterHandlerCollection
 {
     public void AddAfter<TFilter>(Type filterHandler)
     {

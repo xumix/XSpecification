@@ -10,12 +10,12 @@ namespace XSpecification.Linq.Tests;
 public class TestFilterHandler2 : IFilterHandler
 {
     /// <inheritdoc />
-    public virtual void CreateExpression<TModel>(Context<TModel> context, Action<Context<TModel>> next)
+    public virtual void Handle<TModel>(LinqFilterContext<TModel> context, Action<LinqFilterContext<TModel>> next)
     {
         next(context);
     }
 
-    public virtual bool CanHandle<TModel>(Context<TModel> context)
+    public virtual bool CanHandle<TModel>(LinqFilterContext<TModel> context)
     {
         return context.FilterPropertyValue is IFilter;
     }

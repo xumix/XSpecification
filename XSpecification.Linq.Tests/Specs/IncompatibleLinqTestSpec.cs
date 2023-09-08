@@ -1,10 +1,13 @@
 ﻿#nullable disable
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 using XSpecification.Linq.Pipeline;
 
-namespace XSpecification.Linq.Tests;
+using Options = XSpecification.Core.Options;
+
+namespace XSpecification.Linq.Tests.Specs;
 
 public class IncompatibleLinqTestSpec : SpecificationBase<LinqTestModel, IncompatibleLinqTestFilter>
 {

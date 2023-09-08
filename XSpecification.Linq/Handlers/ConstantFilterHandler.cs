@@ -17,7 +17,7 @@ public class ConstantFilterHandler : IFilterHandler
     }
 
     /// <inheritdoc />
-    public virtual void CreateExpression<TModel>(Context<TModel> context, Action<Context<TModel>> next)
+    public virtual void Handle<TModel>(LinqFilterContext<TModel> context, Action<LinqFilterContext<TModel>> next)
     {
         var ret = GetExpression<TModel>(context.FilterProperty!.PropertyType,
             context.ModelPropertyExpression!,
@@ -29,7 +29,7 @@ public class ConstantFilterHandler : IFilterHandler
         next(context);
     }
 
-    public virtual bool CanHandle<TModel>(Context<TModel> context)
+    public virtual bool CanHandle<TModel>(LinqFilterContext<TModel> context)
     {
         return context.FilterPropertyValue is not IFilter;
     }

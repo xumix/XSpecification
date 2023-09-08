@@ -31,7 +31,7 @@ public class StringFilterHandler : IFilterHandler
     }
 
     /// <inheritdoc />
-    public virtual void CreateExpression<TModel>(Context<TModel> context, Action<Context<TModel>> next)
+    public virtual void Handle<TModel>(LinqFilterContext<TModel> context, Action<LinqFilterContext<TModel>> next)
     {
         var ret = GetExpression(context);
         if (ret != default)
@@ -44,7 +44,7 @@ public class StringFilterHandler : IFilterHandler
         next(context);
     }
 
-    public virtual bool CanHandle<TModel>(Context<TModel> context)
+    public virtual bool CanHandle<TModel>(LinqFilterContext<TModel> context)
     {
         if (!typeof(StringFilter).IsAssignableFrom(context.FilterProperty!.PropertyType))
         {
@@ -54,7 +54,7 @@ public class StringFilterHandler : IFilterHandler
         return true;
     }
 
-    protected static Expression<Func<TModel, bool>>? GetExpression<TModel>(Context<TModel> context)
+    protected static Expression<Func<TModel, bool>>? GetExpression<TModel>(LinqFilterContext<TModel> context)
     {
         var propAccessor = context.ModelPropertyExpression!;
         var filter = (StringFilter)context.FilterPropertyValue!;

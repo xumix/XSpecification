@@ -10,6 +10,8 @@ using Microsoft.Extensions.Options;
 using XSpecification.Core;
 using XSpecification.Linq.Pipeline;
 
+using Options = XSpecification.Core.Options;
+
 namespace XSpecification.Linq;
 
 public abstract class SpecificationBase<TModel, TFilter> : ISpecification
@@ -155,7 +157,7 @@ public abstract class SpecificationBase<TModel, TFilter> : ISpecification
             var propertyFilterType = GetPropertyFilterType(filterProp, sourceValue);
             CheckTypeCompatibility(sourceValue, propertyFilterType);
 
-            var context = new Context<TModel>
+            var context = new LinqFilterContext<TModel>
             {
                 FilterProperty = filterProp,
                 FilterPropertyValue = sourceValue,

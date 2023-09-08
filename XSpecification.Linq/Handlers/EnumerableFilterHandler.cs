@@ -5,6 +5,7 @@ using System.Reflection;
 using Microsoft.Extensions.Logging;
 
 using XSpecification.Core;
+using XSpecification.Core.Pipeline;
 using XSpecification.Linq.Pipeline;
 
 namespace XSpecification.Linq.Handlers;
@@ -30,9 +31,9 @@ public class EnumerableFilterHandler : IFilterHandler
     }
 
     /// <inheritdoc />
-    public virtual void CreateExpression<TModel>(Context<TModel> context, Action<Context<TModel>> next)
+    public virtual void Handle<TModel>(LinqFilterContext<TModel> context, Action<LinqFilterContext<TModel>> next)
     {
-        var ret = GetExpression(context);
+        var ret = GetExpression<TModel>(context);
         if (ret != default)
         {
             _logger.LogDebug("Created Enumerable expression: {Expression}", ret.Body);
@@ -43,13 +44,13 @@ public class EnumerableFilterHandler : IFilterHandler
         next(context);
     }
 
-    public virtual bool CanHandle<TModel>(Context<TModel> context)
+    public virtual bool CanHandle<TModel>(LinqFilterContext<TModel> context)
     {
         var value = context.FilterPropertyValue!;
         return value is IEnumerable && value is not string && value is not IListFilter;
     }
 
-    protected internal static Expression<Func<TModel, bool>> GetExpression<TModel>(Context<TModel> context)
+    protected internal static Expression<Func<TModel, bool>> GetExpression<TModel>(Context context)
     {
         var propAccessor = context.ModelPropertyExpression!;
         var propertyType = context.ModelProperty!.PropertyType;

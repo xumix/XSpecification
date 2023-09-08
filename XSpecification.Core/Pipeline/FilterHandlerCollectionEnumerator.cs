@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace XSpecification.Linq.Pipeline;
+namespace XSpecification.Core.Pipeline;
 
 /// <summary>
 /// Enumerator for a pipeline builder.

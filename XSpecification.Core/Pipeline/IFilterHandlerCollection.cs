@@ -1,4 +1,4 @@
-namespace XSpecification.Linq.Pipeline;
+namespace XSpecification.Core.Pipeline;
 
 public interface IFilterHandlerCollection : IEnumerable<Type>
 {

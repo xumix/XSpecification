@@ -5,7 +5,7 @@ namespace XSpecification.Linq.Handlers;
 public static class ExpressionExtensions
 {
     /// <summary>
-    /// Creates a clousre expression for the given value to parametrize SQL query.
+    /// Creates a closure expression for the given value to parametrize SQL query.
     /// Does not work with .Contains() method as of EF Core 6.
     /// </summary>
     public static Expression CreateClousre(object? value, Type targetType)

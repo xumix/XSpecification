@@ -4,9 +4,9 @@ namespace XSpecification.Linq.Handlers;
 
 public interface IFilterHandler
 {
-    void CreateExpression<TModel>(
-        Context<TModel> context,
-        Action<Context<TModel>> next);
+    void Handle<TModel>(
+        LinqFilterContext<TModel> context,
+        Action<LinqFilterContext<TModel>> next);
 
-    bool CanHandle<TModel>(Context<TModel> context);
+    bool CanHandle<TModel>(LinqFilterContext<TModel> context);
 }

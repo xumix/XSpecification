@@ -19,6 +19,7 @@ using NUnit.Framework;
 
 using XSpecification.Core;
 using XSpecification.Linq.Handlers;
+using XSpecification.Linq.Tests.Specs;
 
 namespace XSpecification.Linq.Tests
 {

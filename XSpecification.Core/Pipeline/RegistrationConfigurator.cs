@@ -1,21 +1,9 @@
-
 using Microsoft.Extensions.DependencyInjection;
 
-using XSpecification.Linq.Pipeline;
+namespace XSpecification.Core.Pipeline;
 
-namespace XSpecification.Linq;
-
-public interface IRegistrationConfigurator
-{
-    IFilterHandlerCollection FilterHandlers { get; }
-    IEnumerable<Type> Specifications { get; }
-    IServiceCollection Services { get; }
-    void AddSpecification<TSpecification>();
-    void AddSpecifications(params Type[] specTypes);
-    void Configure();
-}
-
-internal sealed class RegistrationConfigurator : IRegistrationConfigurator
+public class RegistrationConfigurator<TSpec, TFilterCollection> : IRegistrationConfigurator
+    where TFilterCollection : IFilterHandlerCollection, new()
 {
     private readonly IServiceCollection _services;
     private readonly List<Type> _specifications = new List<Type>();
@@ -25,7 +13,7 @@ internal sealed class RegistrationConfigurator : IRegistrationConfigurator
         _services = services;
     }
 
-    public IFilterHandlerCollection FilterHandlers { get; } = new FilterHandlerCollection();
+    public IFilterHandlerCollection FilterHandlers { get; } = new TFilterCollection();
 
     public IEnumerable<Type> Specifications => _specifications.ToArray();
 
@@ -50,7 +38,7 @@ internal sealed class RegistrationConfigurator : IRegistrationConfigurator
 
         foreach (var specification in Specifications)
         {
-            _services.AddTransient(typeof(ISpecification), specification);
+            _services.AddTransient(typeof(TSpec), specification);
             _services.AddSingleton(specification);
         }
     }
