@@ -3,23 +3,23 @@ using Microsoft.Extensions.Options;
 
 using XSpecification.Core;
 using XSpecification.Core.Pipeline;
-using XSpecification.Linq.Handlers;
-using XSpecification.Linq.Pipeline;
+using XSpecification.Elasticsearch.Handlers;
+using XSpecification.Elasticsearch.Pipeline;
 
 using Options = XSpecification.Core.Options;
 
-namespace XSpecification.Linq;
+namespace XSpecification.Elasticsearch;
 
 public static class ServiceRegistrationExtensions
 {
-    public static OptionsBuilder<Options> AddLinqSpecification(
+    public static OptionsBuilder<Options> AddElasticSpecification(
         this IServiceCollection services,
         // ReSharper disable once MethodOverloadWithOptionalParameter
-        Action<IRegistrationConfigurator<LinqFilterHandlerCollection>> configureAction)
+        Action<IRegistrationConfigurator<ElasticFilterHandlerCollection>> configureAction)
     {
 
-        var configurator = new RegistrationConfigurator<ISpecification, LinqFilterHandlerCollection>(services);
-        services.AddSingleton(typeof(IFilterHandlerPipeline<>), typeof(FilterHandlerPipeline<>));
+        var configurator = new RegistrationConfigurator<ISpecification, ElasticFilterHandlerCollection>(services);
+        services.AddSingleton(typeof(IFilterHandlerPipeline), typeof(FilterHandlerPipeline));
         services.AddSingleton(configurator.FilterHandlers);
 
         configurator.FilterHandlers.AddLast(typeof(ConstantFilterHandler));
@@ -52,7 +52,7 @@ public static class ServiceRegistrationExtensions
                 }
 
                 var filterType = baseType.GetGenericArguments()[1];
-                spec.CreateFilterExpression(Activator.CreateInstance(filterType)!);
+                spec.CreateFilterQuery(Activator.CreateInstance(filterType)!);
             }
             catch (Exception e)
             {

@@ -1,32 +1,32 @@
 using Microsoft.Extensions.DependencyInjection;
 
 using XSpecification.Core.Pipeline;
-using XSpecification.Linq.Handlers;
+using XSpecification.Elasticsearch.Handlers;
 
-namespace XSpecification.Linq.Pipeline;
+namespace XSpecification.Elasticsearch.Pipeline;
 
-internal class FilterHandlerPipeline<TModel> : IFilterHandlerPipeline<TModel>
+internal class FilterHandlerPipeline : IFilterHandlerPipeline
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IFilterHandlerCollection _handlers;
-    private Action<LinqFilterContext<TModel>>? _entryPoint;
+    private Action<QueryContext>? _entryPoint;
 
     /// <summary>
     /// Termination action for the end of pipelines.
     /// </summary>
-    private static readonly Action<LinqFilterContext<TModel>> TerminateAction = ctxt => { };
+    private static readonly Action<QueryContext> TerminateAction = ctxt => { };
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FilterHandlerPipeline{TModel}"/> class.
     /// </summary>
-    public FilterHandlerPipeline(IServiceProvider serviceProvider, LinqFilterHandlerCollection handlers)
+    public FilterHandlerPipeline(IServiceProvider serviceProvider, ElasticFilterHandlerCollection handlers)
     {
         _serviceProvider = serviceProvider;
         _handlers = handlers;
     }
 
     /// <inheritdoc />
-    public void Execute(LinqFilterContext<TModel> ctxt)
+    public void Execute(QueryContext ctxt)
     {
         _entryPoint ??= BuildPipeline();
         _entryPoint?.Invoke(ctxt);
@@ -36,14 +36,14 @@ internal class FilterHandlerPipeline<TModel> : IFilterHandlerPipeline<TModel>
     /// Builds the pipeline as a chain of actions.
     /// </summary>
     /// <returns></returns>
-    public Action<LinqFilterContext<TModel>> BuildPipeline()
+    public Action<QueryContext> BuildPipeline()
     {
         // When we build, we go through the set and construct a single call stack, from the end.
         var current = _handlers.Last;
         var currentInvoke = TerminateAction;
 
-        Action<LinqFilterContext<TModel>> Chain(
-            Action<LinqFilterContext<TModel>> next,
+        Action<QueryContext> Chain(
+            Action<QueryContext> next,
             Type handlerType) =>
             ctxt =>
             {

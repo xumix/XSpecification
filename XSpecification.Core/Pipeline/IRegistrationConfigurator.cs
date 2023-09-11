@@ -2,9 +2,9 @@
 
 namespace XSpecification.Core.Pipeline;
 
-public interface IRegistrationConfigurator
+public interface IRegistrationConfigurator<out TFilterCollection>
 {
-    IFilterHandlerCollection FilterHandlers { get; }
+    TFilterCollection FilterHandlers { get; }
     IEnumerable<Type> Specifications { get; }
     IServiceCollection Services { get; }
     void AddSpecification<TSpecification>();

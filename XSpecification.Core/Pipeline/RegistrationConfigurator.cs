@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace XSpecification.Core.Pipeline;
 
-public class RegistrationConfigurator<TSpec, TFilterCollection> : IRegistrationConfigurator
+public class RegistrationConfigurator<TSpec, TFilterCollection> : IRegistrationConfigurator<TFilterCollection>
     where TFilterCollection : IFilterHandlerCollection, new()
 {
     private readonly IServiceCollection _services;
@@ -13,7 +13,7 @@ public class RegistrationConfigurator<TSpec, TFilterCollection> : IRegistrationC
         _services = services;
     }
 
-    public IFilterHandlerCollection FilterHandlers { get; } = new TFilterCollection();
+    public TFilterCollection FilterHandlers { get; } = new TFilterCollection();
 
     public IEnumerable<Type> Specifications => _specifications.ToArray();
 

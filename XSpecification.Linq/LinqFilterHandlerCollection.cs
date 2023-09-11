@@ -2,6 +2,6 @@
 
 namespace XSpecification.Linq;
 
-internal class LinqFilterHandlerCollection : FilterHandlerCollection
+public class LinqFilterHandlerCollection : FilterHandlerCollection
 {
 }
