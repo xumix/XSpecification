@@ -120,33 +120,33 @@ namespace XSpecification.Linq.Tests
             var context = new SpecimenContext(fixture);
             var models = context.CreateMany<LinqTestModel>(10).ToArray();
 
-            models.AsQueryable().Where(expression).ToArray();
+            models.AsQueryable().Where(expression).ToArray().Should().NotBeNull();
             dbContext.TestModels.AddRange(models);
             dbContext.SaveChanges();
 
-            dbContext.TestModels.Where(expression).ToArray();
+            dbContext.TestModels.Where(expression).ToArray().Should().NotBeNull();
 
             filter.RangeId = new RangeFilter<int> { Start = null, End = 5 };
             filter.ListId = new ListFilter<int>();
             filter.ComplexName = new StringFilter("complex");
 
             expression = spec.CreateFilterExpression(filter);
-            models.AsQueryable().Where(expression).ToArray();
-            dbContext.TestModels.Where(expression).ToArray();
+            models.AsQueryable().Where(expression).ToArray().Should().NotBeNull();
+            dbContext.TestModels.Where(expression).ToArray().Should().NotBeNull();
 
             filter.RangeId = new RangeFilter<int>();
             filter.ComplexName = new StringFilter { IsNull = true };
 
             expression = spec.CreateFilterExpression(filter);
-            models.AsQueryable().Where(expression).ToArray();
-            dbContext.TestModels.Where(expression).ToArray();
+            models.AsQueryable().Where(expression).ToArray().Should().NotBeNull();
+            dbContext.TestModels.Where(expression).ToArray().Should().NotBeNull();
 
             filter.RangeId = filter.RangeId = new RangeFilter<int> { End = null, Start = 5 };
             filter.ComplexName = new StringFilter { IsNotNull = true };
 
             expression = spec.CreateFilterExpression(filter);
-            models.AsQueryable().Where(expression).ToArray();
-            dbContext.TestModels.Where(expression).ToArray();
+            models.AsQueryable().Where(expression).ToArray().Should().NotBeNull();
+            dbContext.TestModels.Where(expression).ToArray().Should().NotBeNull();
         }
 
         [Test]

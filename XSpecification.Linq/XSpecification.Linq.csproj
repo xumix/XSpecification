@@ -1,17 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp3.1</TargetFramework>
+        <TargetFramework>net6.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <TargetsForTfmSpecificContentInPackage>$(TargetsForTfmSpecificContentInPackage);CopyProjectReferencesToPackage</TargetsForTfmSpecificContentInPackage>
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Linq.Expression.Optimizer" Version="1.0.15" />
-        <PackageReference Include="LinqKit.Core" Version="1.2.4" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.4" />
-        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="6.0.0" />
+        <PackageReference Include="Linq.Expression.Optimizer" Version="1.0.24" />
+        <PackageReference Include="LinqKit.Core" Version="1.2.8" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.2" />
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.2" />
     </ItemGroup>
 
     <ItemGroup>
