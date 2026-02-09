@@ -35,6 +35,13 @@ public static class ServiceRegistrationExtensions
         return services.AddOptions<Options>();
     }
 
+    /// <summary>
+    /// Validates all registered specifications in the service provider.
+    /// </summary>
+    /// <param name="serviceProvider">The service provider containing the specifications to validate.</param>
+    /// <exception cref="AggregateException">
+    /// Thrown when one or more specifications fail validation. The inner exceptions contain details of the validation failures.
+    /// </exception>
     public static void ValidateSpecifications(this IServiceProvider serviceProvider)
     {
         var specs = serviceProvider.GetServices<ISpecification>();

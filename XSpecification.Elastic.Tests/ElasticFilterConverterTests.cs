@@ -22,7 +22,7 @@ using XSpecification.Elasticsearch.Handlers;
 namespace XSpecification.Elastic.Tests
 {
     [TestFixture]
-    public class ElsticFilterConverterTests
+    public class ElasticFilterConverterTests
     {
         private ServiceProvider _serviceProvider = null!;
 
