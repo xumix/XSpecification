@@ -47,14 +47,14 @@ jobs:
         run: dotnet test XSpecification.slnx -c Release --no-build --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: test-results
           path: ./TestResults/**/*.trx
 
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage
@@ -90,7 +90,7 @@ jobs:
         run: dotnet pack XSpecification.slnx -c Release -o ./artifacts --version-suffix "preview.${{ github.run_number }}"
 
       - name: Upload packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: nupkg-preview
           path: ./artifacts/*.*nupkg
