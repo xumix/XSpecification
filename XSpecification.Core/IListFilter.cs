@@ -15,6 +15,11 @@ public interface IListFilter : ICloneable, IEnumerable, INullableFilter
     Type ElementType { get; }
 
     /// <summary>
+    ///  Filter values
+    /// </summary>
+    IEnumerable? Values { get; set; }
+
+    /// <summary>
     /// Checks if the filter has some filtering rules
     /// </summary>
     bool HasValue();

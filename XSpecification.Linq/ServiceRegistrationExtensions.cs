@@ -1,35 +1,75 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+
+using XSpecification.Core;
+using XSpecification.Core.Pipeline;
+using XSpecification.Linq.Handlers;
+using XSpecification.Linq.Pipeline;
+
+using Options = XSpecification.Core.Options;
 
 namespace XSpecification.Linq;
 
 public static class ServiceRegistrationExtensions
 {
-    public static IServiceCollection AddLinqSpecification(
+    public static OptionsBuilder<Options> AddLinqSpecification(
         this IServiceCollection services,
         // ReSharper disable once MethodOverloadWithOptionalParameter
-        Action<Options, IServiceProvider>? configure = null)
+        Action<IRegistrationConfigurator<LinqFilterHandlerCollection>> configureAction)
     {
-        var builder = services.AddOptions<Options>();
 
-        if (configure != null)
+        var configurator = new RegistrationConfigurator<ISpecification, LinqFilterHandlerCollection>(services);
+        services.AddSingleton(typeof(IFilterHandlerPipeline<>), typeof(FilterHandlerPipeline<>));
+        services.AddSingleton(configurator.FilterHandlers);
+
+        configurator.FilterHandlers.AddLast(typeof(ConstantFilterHandler));
+        configurator.FilterHandlers.AddLast(typeof(EnumerableFilterHandler));
+        configurator.FilterHandlers.AddLast(typeof(NullableFilterHandler));
+        configurator.FilterHandlers.AddLast(typeof(ListFilterHandler));
+        configurator.FilterHandlers.AddLast(typeof(StringFilterHandler));
+        configurator.FilterHandlers.AddLast(typeof(RangeFilterHandler));
+
+        configureAction(configurator);
+        configurator.Configure();
+
+        return services.AddOptions<Options>();
+    }
+
+    /// <summary>
+    /// Validates all registered specifications in the service provider.
+    /// </summary>
+    /// <param name="serviceProvider">The service provider containing the specifications to validate.</param>
+    /// <exception cref="AggregateException">
+    /// Thrown when one or more specifications fail validation. The inner exceptions contain details of the validation failures.
+    /// </exception>
+    public static void ValidateSpecifications(this IServiceProvider serviceProvider)
+    {
+        var specs = serviceProvider.GetServices<ISpecification>();
+
+        var agg = new List<Exception>();
+
+        foreach (var spec in specs)
         {
-            builder.Configure(configure);
+            try
+            {
+                var baseType = spec.GetType().GetClosedOfOpenGeneric(typeof(SpecificationBase<,>));
+                if (baseType == null)
+                {
+                    continue;
+                }
+
+                var filterType = baseType.GetGenericArguments()[1];
+                spec.CreateFilterExpression(Activator.CreateInstance(filterType)!);
+            }
+            catch (Exception e)
+            {
+                agg.Add(e);
+            }
         }
 
-        return services;
-    }
-
-    public static IServiceCollection AddLinqSpecification(
-        this IServiceCollection services,
-        // ReSharper disable once MethodOverloadWithOptionalParameter
-        Action<Options>? configure = null)
-    {
-        return AddLinqSpecification(services, (options, _) => configure?.Invoke(options));
-    }
-
-    public static IServiceCollection AddLinqSpecification(
-        this IServiceCollection services)
-    {
-        return AddLinqSpecification(services, (Action<Options>?)null);
+        if (agg.Any())
+        {
+            throw new AggregateException(agg);
+        }
     }
 }

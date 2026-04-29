@@ -1,0 +1,29 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "test-xspec-linq",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"test",
+				"XSpecification.Linq.Tests/XSpecification.Linq.Tests.csproj"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		},
+		{
+			"label": "test-xspec-elastic",
+			"type": "shell",
+			"command": "dotnet",
+			"args": [
+				"test",
+				"XSpecification.Elastic.Tests/XSpecification.Elastic.Tests.csproj"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "test"
+		}
+	]
+}

@@ -1,6 +1,6 @@
 namespace XSpecification.Core;
 
-public interface INullableFilter
+public interface INullableFilter : IFilter
 {
     /// <summary>
     ///     Indicates that filtering must check model field for non-null value

@@ -1,52 +1,79 @@
 #nullable disable
 using System;
+using System.Collections;
 using System.Linq;
 
 using AutoFixture;
 using AutoFixture.Kernel;
 
-using LinqKit;
+using FluentAssertions;
 
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-
-using NSubstitute;
 
 using NUnit.Framework;
 
 using XSpecification.Core;
+using XSpecification.Linq.Handlers;
+using XSpecification.Linq.Tests.Specs;
 
 namespace XSpecification.Linq.Tests
 {
     [TestFixture]
     public class LinqFilterConverterTests
     {
-        private ServiceProvider serviceProvider = null!;
+        private ServiceProvider _serviceProvider = null!;
 
-        [SetUp]
+        [OneTimeSetUp]
         public void SetUp()
         {
             var services = new ServiceCollection();
-            services.AddSingleton<ILogger<LinqTestSpec>>(Substitute.For<ILogger<LinqTestSpec>>());
-            services.AddSingleton<ILogger<IncompatibleLinqTestSpec>>(
-                Substitute.For<ILogger<IncompatibleLinqTestSpec>>());
-            services.AddLinqSpecification();
+            services.AddLogging(c =>
+            {
+                c.AddConsole().AddDebug();
+                c.SetMinimumLevel(LogLevel.Trace);
+            });
+
+            services.AddLinqSpecification(cfg =>
+            {
+                cfg.AddSpecification<LinqTestSpec>();
+                cfg.AddSpecification<UnhandledLinqTestSpec>();
+                cfg.AddSpecification<IncompatibleLinqTestSpec>();
+
+                cfg.FilterHandlers.AddBefore<ConstantFilterHandler>(typeof(TestFilterHandler));
+                cfg.FilterHandlers.AddAfter<NullableFilterHandler>(typeof(TestFilterHandler2));
+
+                // for coverage
+                var enumerator = ((IEnumerable)cfg.FilterHandlers).GetEnumerator();
+                enumerator.MoveNext();
+                enumerator.Current.Should().NotBeNull();
+                enumerator.Reset();
+            });
+
+            services.AddDbContext<TestContext>((prov, builder) =>
+            {
+                builder.UseLoggerFactory(prov.GetRequiredService<ILoggerFactory>());
+                builder.UseSqlite("DataSource=file::memory:?cache=shared")
+                       .EnableSensitiveDataLogging()
+                       .EnableDetailedErrors();
+            });
+
             // services.AddLinqSpecification(o =>
             // {
             //     o.DisableAutoPropertyHandling = true;
             // });
-            services.AddSingleton<LinqTestSpec>();
-            services.AddSingleton<UnhandledLinqTestSpec>();
-            services.AddSingleton<IncompatibleLinqTestSpec>();
 
-            serviceProvider = services.BuildServiceProvider();
+            _serviceProvider = services.BuildServiceProvider();
         }
 
         [Test]
         public void Ensure_Converters_Dont_Throw()
         {
-            var spec = serviceProvider.GetRequiredService<LinqTestSpec>();
+            var spec = _serviceProvider.GetRequiredService<LinqTestSpec>();
 
             var fixture = new Fixture();
             fixture.Behaviors.OfType<ThrowingRecursionBehavior>().ToList()
@@ -55,15 +82,20 @@ namespace XSpecification.Linq.Tests
             fixture.Customize<INullableFilter>(c => c.With(f => f.IsNull, false).With(f => f.IsNotNull, false));
 
             var context = new SpecimenContext(fixture);
-            var filter = context.Create<LinqTestFilter>();
-
-            var expression = spec.CreateFilterExpression(filter);
+            for (var i = 0; i < 10; i++)
+            {
+                var filter = context.Create<LinqTestFilter>();
+                var expression = spec.CreateFilterExpression(filter);
+            }
         }
 
         [Test]
         public void Ensure_Filtering_Doesnt_Throw()
         {
-            var spec = serviceProvider.GetRequiredService<LinqTestSpec>();
+            var spec = _serviceProvider.GetRequiredService<LinqTestSpec>();
+
+            using var dbContext = _serviceProvider.GetRequiredService<TestContext>();
+            dbContext.Database.EnsureCreated();
 
             var filter = new LinqTestFilter
             {
@@ -86,15 +118,41 @@ namespace XSpecification.Linq.Tests
                    .ForEach(b => fixture.Behaviors.Remove(b));
             fixture.Behaviors.Add(new OmitOnRecursionBehavior(2));
             var context = new SpecimenContext(fixture);
-            var models = context.CreateMany<LinqTestModel>(10);
+            var models = context.CreateMany<LinqTestModel>(10).ToArray();
 
-            var filtered = models.AsQueryable().Where(expression).ToArray();
+            models.AsQueryable().Where(expression).ToArray().Should().NotBeNull();
+            dbContext.TestModels.AddRange(models);
+            dbContext.SaveChanges();
+
+            dbContext.TestModels.Where(expression).ToArray().Should().NotBeNull();
+
+            filter.RangeId = new RangeFilter<int> { Start = null, End = 5 };
+            filter.ListId = new ListFilter<int>();
+            filter.ComplexName = new StringFilter("complex");
+
+            expression = spec.CreateFilterExpression(filter);
+            models.AsQueryable().Where(expression).ToArray().Should().NotBeNull();
+            dbContext.TestModels.Where(expression).ToArray().Should().NotBeNull();
+
+            filter.RangeId = new RangeFilter<int>();
+            filter.ComplexName = new StringFilter { IsNull = true };
+
+            expression = spec.CreateFilterExpression(filter);
+            models.AsQueryable().Where(expression).ToArray().Should().NotBeNull();
+            dbContext.TestModels.Where(expression).ToArray().Should().NotBeNull();
+
+            filter.RangeId = filter.RangeId = new RangeFilter<int> { End = null, Start = 5 };
+            filter.ComplexName = new StringFilter { IsNotNull = true };
+
+            expression = spec.CreateFilterExpression(filter);
+            models.AsQueryable().Where(expression).ToArray().Should().NotBeNull();
+            dbContext.TestModels.Where(expression).ToArray().Should().NotBeNull();
         }
 
         [Test]
         public void Ensure_Unhandled_Throws()
         {
-            var spec = serviceProvider.GetRequiredService<UnhandledLinqTestSpec>();
+            var spec = _serviceProvider.GetRequiredService<UnhandledLinqTestSpec>();
 
             var filter = new LinqTestFilter();
 
@@ -108,7 +166,7 @@ namespace XSpecification.Linq.Tests
         [Test]
         public void Ensure_Incompatible_Throws()
         {
-            var spec = serviceProvider.GetRequiredService<IncompatibleLinqTestSpec>();
+            var spec = _serviceProvider.GetRequiredService<IncompatibleLinqTestSpec>();
 
             var filter = new IncompatibleLinqTestFilter { Incompatible = new ListFilter<int> { 1, 2 } };
 
@@ -119,111 +177,16 @@ namespace XSpecification.Linq.Tests
                 Throws.InstanceOf<AggregateException>()
                       .And.Message.Contains(nameof(IncompatibleLinqTestFilter.Incompatible)));
         }
-    }
 
-    public class LinqTestSpec : SpecificationBase<LinqTestModel, LinqTestFilter>
-    {
-        /// <inheritdoc />
-        public LinqTestSpec(ILogger<LinqTestSpec> logger, IOptions<Options> options)
-            : base(logger, options)
+        [Test]
+        public void Ensure_Validation_Throws()
         {
-        IgnoreField(f => f.Ignored);
-        HandleField(f => f.Explicit, m => m.UnmatchingProperty);
-        HandleField(f => f.Conditional, (prop, filter) =>
-        {
-            if (filter.Conditional)
-            {
-                return CreateExpressionFromFilterProperty(prop, f => f.Name, filter.Conditional.ToString());
-            }
-
-            if(!filter.Conditional && filter.Id == 312)
-            {
-                return PredicateBuilder.New<LinqTestModel>()
-                                       .And(f => f.Date.Hour == 1)
-                                       .And(f => f.UnmatchingProperty == 123);
-            }
-
-            return DoNothing;
-        });
+            Assert.That(() =>
+                {
+                    _serviceProvider.ValidateSpecifications();
+                },
+                Throws.InstanceOf<AggregateException>()
+                      .And.Message.Contains("are not mapped"));
         }
-    }
-
-    public class UnhandledLinqTestSpec : SpecificationBase<LinqTestModel, LinqTestFilter>
-    {
-        /// <inheritdoc />
-        public UnhandledLinqTestSpec(ILogger<LinqTestSpec> logger, IOptions<Options> options)
-            : base(logger, options)
-        {
-        }
-    }
-
-    public class IncompatibleLinqTestSpec : SpecificationBase<LinqTestModel, IncompatibleLinqTestFilter>
-    {
-        /// <inheritdoc />
-        public IncompatibleLinqTestSpec(ILogger<IncompatibleLinqTestSpec> logger, IOptions<Options> options)
-            : base(logger, options)
-        {
-            HandleField(f => f.Explicit, m => m.UnmatchingProperty);
-            HandleField(f => f.Incompatible, m => m.RangeDate);
-        }
-    }
-
-    public class LinqTestModel
-    {
-        public int Id { get; set; }
-
-        public int RangeId { get; set; }
-
-        public int ListId { get; set; }
-
-        public string Name { get; set; }
-
-        public string ListName { get; set; }
-
-        public string ComplexName { get; set; }
-
-        public DateTime? NullableDate { get; set; }
-
-        public DateTime Date { get; set; }
-
-        public DateTime ListDate { get; set; }
-
-        public DateTime? RangeDate { get; set; }
-
-        public int UnmatchingProperty { get; set; }
-    }
-
-    public class LinqTestFilter
-    {
-        public int? Id { get; set; }
-
-        public RangeFilter<int> RangeId { get; set; }
-
-        public ListFilter<int> ListId { get; set; }
-
-        public string Name { get; set; }
-
-        public ListFilter<string> ListName { get; set; }
-
-        public StringFilter ComplexName { get; set; }
-
-        public DateTime? NullableDate { get; set; }
-
-        public DateTime? Date { get; set; }
-
-        public ListFilter<DateTime> ListDate { get; set; }
-
-        public RangeFilter<DateTime> RangeDate { get; set; }
-
-        public ListFilter<int> Explicit { get; set; }
-
-        public bool Conditional { get; set; }
-
-        public string Ignored { get; set; }
-    }
-
-    public class IncompatibleLinqTestFilter : LinqTestFilter
-    {
-        public ListFilter<int> Incompatible { get; set; }
     }
 }

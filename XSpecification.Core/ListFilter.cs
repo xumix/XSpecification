@@ -6,8 +6,8 @@ namespace XSpecification.Core;
 
 public sealed class ListFilter<T> : IListFilter, IReadOnlyCollection<T>
 {
-    private bool isNotNull;
-    private bool isNull;
+    private bool _isNotNull;
+    private bool _isNull;
 
     public ListFilter()
         : this(null)
@@ -46,14 +46,14 @@ public sealed class ListFilter<T> : IListFilter, IReadOnlyCollection<T>
     /// </summary>
     public bool IsNotNull
     {
-        get => isNotNull;
+        get => _isNotNull;
 
         set
         {
-            isNotNull = value;
-            if (isNotNull)
+            _isNotNull = value;
+            if (_isNotNull)
             {
-                isNull = false;
+                _isNull = false;
             }
         }
     }
@@ -63,14 +63,14 @@ public sealed class ListFilter<T> : IListFilter, IReadOnlyCollection<T>
     /// </summary>
     public bool IsNull
     {
-        get => isNull;
+        get => _isNull;
 
         set
         {
-            isNull = value;
-            if (isNull)
+            _isNull = value;
+            if (_isNull)
             {
-                isNotNull = false;
+                _isNotNull = false;
             }
         }
     }
@@ -78,7 +78,13 @@ public sealed class ListFilter<T> : IListFilter, IReadOnlyCollection<T>
     /// <summary>
     ///  Filter values
     /// </summary>
-    internal List<T>? Values { get; set; }
+    public List<T>? Values { get; set; }
+
+    IEnumerable? IListFilter.Values
+    {
+        get => Values;
+        set => Values = (List<T>?)value;
+    }
 
     public static implicit operator ListFilter<T>(T value)
     {
