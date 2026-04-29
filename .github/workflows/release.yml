@@ -42,16 +42,16 @@ jobs:
           fi
 
       - name: Restore
-        run: dotnet restore XSpecification.sln
+        run: dotnet restore XSpecification.slnx
 
       - name: Build
-        run: dotnet build XSpecification.sln -c Release --no-restore -p:Version=${{ steps.ver.outputs.version }}
+        run: dotnet build XSpecification.slnx -c Release --no-restore -p:Version=${{ steps.ver.outputs.version }}
 
       - name: Test
-        run: dotnet test XSpecification.sln -c Release --no-build
+        run: dotnet test XSpecification.slnx -c Release --no-build
 
       - name: Pack
-        run: dotnet pack XSpecification.sln -c Release --no-build -o ./artifacts -p:Version=${{ steps.ver.outputs.version }}
+        run: dotnet pack XSpecification.slnx -c Release --no-build -o ./artifacts -p:Version=${{ steps.ver.outputs.version }}
 
       - name: Push to NuGet.org
         env:

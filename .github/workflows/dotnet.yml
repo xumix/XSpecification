@@ -38,13 +38,13 @@ jobs:
             ${{ runner.os }}-nuget-
 
       - name: Restore
-        run: dotnet restore XSpecification.sln
+        run: dotnet restore XSpecification.slnx
 
       - name: Build
-        run: dotnet build XSpecification.sln -c Release --no-restore
+        run: dotnet build XSpecification.slnx -c Release --no-restore
 
       - name: Test
-        run: dotnet test XSpecification.sln -c Release --no-build --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
+        run: dotnet test XSpecification.slnx -c Release --no-build --logger "trx;LogFileName=test-results.trx" --collect:"XPlat Code Coverage" --results-directory ./TestResults
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -87,7 +87,7 @@ jobs:
             10.0.x
 
       - name: Pack
-        run: dotnet pack XSpecification.sln -c Release -o ./artifacts --version-suffix "preview.${{ github.run_number }}"
+        run: dotnet pack XSpecification.slnx -c Release -o ./artifacts --version-suffix "preview.${{ github.run_number }}"
 
       - name: Upload packages
         uses: actions/upload-artifact@v4
