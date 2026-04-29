@@ -9,7 +9,7 @@ using XSpecification.Linq.Pipeline;
 
 namespace XSpecification.Linq.Handlers;
 
-public class StringFilterHandler : IFilterHandler
+public partial class StringFilterHandler : IFilterHandler
 {
     private static readonly FrozenDictionary<string, MethodInfo> TypeMethods =
         new Dictionary<string, MethodInfo>
@@ -40,7 +40,7 @@ public class StringFilterHandler : IFilterHandler
         var ret = GetExpression(context);
         if (ret != default)
         {
-            _logger.LogDebug("Created String expression: {Expression}", ret.Body);
+            LogCreatedStringExpressionExpression(ret.Body);
 
             context.Expression.And(ret);
         }
@@ -105,4 +105,7 @@ public class StringFilterHandler : IFilterHandler
 
         return (Expression<Func<TModel, bool>>)Expression.Lambda(body, propAccessor.Parameters);
     }
+
+    [LoggerMessage(LogLevel.Debug, "Created String expression: {Expression}")]
+    partial void LogCreatedStringExpressionExpression(Expression expression);
 }

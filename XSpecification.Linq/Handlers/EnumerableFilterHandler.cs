@@ -11,7 +11,7 @@ using XSpecification.Linq.Pipeline;
 
 namespace XSpecification.Linq.Handlers;
 
-public class EnumerableFilterHandler : IFilterHandler
+public partial class EnumerableFilterHandler : IFilterHandler
 {
     private static readonly FrozenDictionary<string, MethodInfo> TypeMethods =
         new Dictionary<string, MethodInfo>
@@ -40,7 +40,7 @@ public class EnumerableFilterHandler : IFilterHandler
         var ret = GetExpression<TModel>(context);
         if (ret != default)
         {
-            _logger.LogDebug("Created Enumerable expression: {Expression}", ret.Body);
+            LogCreatedEnumerableExpressionExpression(ret.Body);
 
             context.Expression.And(ret);
         }
@@ -75,5 +75,6 @@ public class EnumerableFilterHandler : IFilterHandler
         return lam;
     }
 
-
+    [LoggerMessage(LogLevel.Debug, "Created Enumerable expression: {Expression}")]
+    partial void LogCreatedEnumerableExpressionExpression(Expression expression);
 }

@@ -7,7 +7,7 @@ using XSpecification.Linq.Pipeline;
 
 namespace XSpecification.Linq.Handlers;
 
-public class RangeFilterHandler : IFilterHandler
+public partial class RangeFilterHandler : IFilterHandler
 {
     private readonly ILogger<RangeFilterHandler> _logger;
 
@@ -25,7 +25,7 @@ public class RangeFilterHandler : IFilterHandler
         var ret = GetExpression(context);
         if (ret != default)
         {
-            _logger.LogDebug("Created Range expression: {Expression}", ret.Body);
+            LogCreatedRangeExpressionExpression(ret.Body);
             context.Expression.And(ret);
         }
 
@@ -99,4 +99,7 @@ public class RangeFilterHandler : IFilterHandler
         var lam = (Expression<Func<TModel, bool>>)Expression.Lambda(body, param);
         return lam;
     }
+
+    [LoggerMessage(LogLevel.Debug, "Created Range expression: {Expression}")]
+    partial void LogCreatedRangeExpressionExpression(Expression expression);
 }

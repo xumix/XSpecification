@@ -7,7 +7,7 @@ using XSpecification.Linq.Pipeline;
 
 namespace XSpecification.Linq.Handlers;
 
-public class NullableFilterHandler : IFilterHandler
+public partial class NullableFilterHandler : IFilterHandler
 {
     private readonly ILogger<NullableFilterHandler> _logger;
 
@@ -25,7 +25,7 @@ public class NullableFilterHandler : IFilterHandler
         var ret = GetExpression(context);
         if (ret != default)
         {
-            _logger.LogDebug("Created Nullable expression: {Expression}", ret.Body);
+            LogCreatedNullableExpressionExpression(ret.Body);
             context.Expression.And(ret);
         }
         else
@@ -75,4 +75,7 @@ public class NullableFilterHandler : IFilterHandler
         var lam = (Expression<Func<TModel, bool>>)Expression.Lambda(body, propAccessor.Parameters);
         return lam;
     }
+
+    [LoggerMessage(LogLevel.Debug, "Created Nullable expression: {Expression}")]
+    partial void LogCreatedNullableExpressionExpression(Expression expression);
 }

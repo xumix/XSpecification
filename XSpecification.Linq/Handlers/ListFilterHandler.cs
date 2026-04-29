@@ -7,7 +7,7 @@ using XSpecification.Linq.Pipeline;
 
 namespace XSpecification.Linq.Handlers;
 
-public class ListFilterHandler : IFilterHandler
+public partial class ListFilterHandler : IFilterHandler
 {
     private readonly ILogger<ListFilterHandler> _logger;
 
@@ -25,7 +25,7 @@ public class ListFilterHandler : IFilterHandler
         var ret = GetExpression(context);
         if (ret != default)
         {
-            _logger.LogDebug("Created List expression: {Expression}", ret.Body);
+            LogCreatedListExpressionExpression(ret.Body);
             context.Expression.And(ret);
         }
 
@@ -65,4 +65,7 @@ public class ListFilterHandler : IFilterHandler
         var lam = (Expression<Func<TModel, bool>>)Expression.Lambda(body, propAccessor.Parameters);
         return lam;
     }
+
+    [LoggerMessage(LogLevel.Debug, "Created List expression: {Expression}")]
+    partial void LogCreatedListExpressionExpression(Expression expression);
 }
