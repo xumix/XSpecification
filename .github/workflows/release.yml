@@ -51,7 +51,14 @@ jobs:
         run: dotnet test XSpecification.slnx -c Release --no-build
 
       - name: Pack
-        run: dotnet pack XSpecification.slnx -c Release --no-build -o ./artifacts -p:Version=${{ steps.ver.outputs.version }}
+        # NOTE: do NOT pass --no-build here. With the .NET 10 SDK,
+        # `dotnet pack --no-build` on multi-targeting projects
+        # (net8.0;net10.0) with ProjectReferences triggers
+        # NETSDK1085 ("'NoBuild' was set to true but the 'Build'
+        # target was invoked") even though the package is produced.
+        # See https://github.com/dotnet/fsharp/issues/12320 and
+        # https://github.com/dotnet/sdk/issues/24943.
+        run: dotnet pack XSpecification.slnx -c Release -o ./artifacts -p:Version=${{ steps.ver.outputs.version }}
 
       - name: Push to NuGet.org
         env:
