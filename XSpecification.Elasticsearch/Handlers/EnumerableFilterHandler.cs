@@ -56,7 +56,7 @@ public class EnumerableFilterHandler : IFilterHandler
             ? new TermQuery { Field = fieldName, Value = terms[0] }
             : new TermsQuery { Field = fieldName, Terms = terms };
 
-        if (!terms.Any())
+        if (terms.Length == 0)
         {
             query.IsVerbatim = true;
         }

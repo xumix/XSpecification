@@ -43,8 +43,9 @@ public static class QueryHelpers
     /// <returns>The value.</returns>
     public static string ToPrettyString(this QueryContainer self)
     {
-        using (var settings = new ConnectionSettings().EnableDebugMode())
+        using (var settings = new ConnectionSettings())
         {
+            settings.EnableDebugMode();
             var client = new ElasticClient(settings);
             return client.RequestResponseSerializer.SerializeToString(self);
         }

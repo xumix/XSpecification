@@ -1,47 +1,52 @@
-﻿using System.Linq.Expressions;
+using System;
+using System.Linq.Expressions;
 
-namespace XSpecification.Linq;
+namespace XSpecification.Core;
 
-internal class ParameterVisitor : ExpressionVisitor
+public class ParameterVisitor : ExpressionVisitor
 {
     private readonly ParameterExpression[] _from;
     private readonly ParameterExpression[] _to;
 
     public ParameterVisitor(IEnumerable<ParameterExpression> from, IEnumerable<ParameterExpression> to)
     {
-        if (@from == null)
-        {
-            throw new ArgumentNullException("from");
-        }
+        ArgumentNullException.ThrowIfNull(from);
+        ArgumentNullException.ThrowIfNull(to);
 
-        if (to == null)
-        {
-            throw new ArgumentNullException("to");
-        }
+        var fromArray = from as ParameterExpression[] ?? from.ToArray();
+        var toArray = to as ParameterExpression[] ?? to.ToArray();
 
-        if (@from.Count() != to.Count())
+        if (fromArray.Length != toArray.Length)
         {
             throw new InvalidOperationException("Parameter lengths must match");
         }
 
-        _from = @from.ToArray();
-        _to = to.ToArray();
+        _from = fromArray;
+        _to = toArray;
     }
 
-    public static LambdaExpression Merge(LambdaExpression fromExpression, LambdaExpression toExpression, Func<Expression, Expression, Expression> mergeFunc)
+    public static LambdaExpression Merge(
+        LambdaExpression fromExpression,
+        LambdaExpression toExpression,
+        Func<Expression, Expression, Expression> mergeFunc)
     {
-        var newBody = new ParameterVisitor(toExpression.Parameters, fromExpression.Parameters).VisitAndConvert(toExpression.Body, "Merge");
+        var newBody = new ParameterVisitor(toExpression.Parameters, fromExpression.Parameters)
+            .VisitAndConvert(toExpression.Body, "Merge");
         return Expression.Lambda(mergeFunc(fromExpression.Body, newBody), fromExpression.Parameters);
     }
 
-    public static Expression<T> Merge<T>(Expression<T> fromExpression, Expression<T> toExpression, Func<Expression, Expression, Expression> mergeFunc)
+    public static Expression<T> Merge<T>(
+        Expression<T> fromExpression,
+        Expression<T> toExpression,
+        Func<Expression, Expression, Expression> mergeFunc)
     {
         return (Expression<T>)Merge((LambdaExpression)fromExpression, toExpression, mergeFunc);
     }
 
     public static LambdaExpression AndAlso(LambdaExpression fromExpression, LambdaExpression toExpression)
     {
-        var newBody = new ParameterVisitor(toExpression.Parameters, fromExpression.Parameters).VisitAndConvert(toExpression.Body, "AndAlso");
+        var newBody = new ParameterVisitor(toExpression.Parameters, fromExpression.Parameters)
+            .VisitAndConvert(toExpression.Body, "AndAlso");
         return Expression.Lambda(Expression.AndAlso(fromExpression.Body, newBody), fromExpression.Parameters);
     }
 
@@ -52,7 +57,8 @@ internal class ParameterVisitor : ExpressionVisitor
 
     public static LambdaExpression OrElse(LambdaExpression fromExpression, LambdaExpression toExpression)
     {
-        var newBody = new ParameterVisitor(toExpression.Parameters, fromExpression.Parameters).VisitAndConvert(toExpression.Body, "OrElse");
+        var newBody = new ParameterVisitor(toExpression.Parameters, fromExpression.Parameters)
+            .VisitAndConvert(toExpression.Body, "OrElse");
         return Expression.Lambda(Expression.OrElse(fromExpression.Body, newBody), fromExpression.Parameters);
     }
 

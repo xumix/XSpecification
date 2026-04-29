@@ -12,7 +12,7 @@ public sealed class ExpressionMemberVisitor : ExpressionVisitor
     /// </param>
     public ExpressionMemberVisitor(Expression expression) => Visit(expression);
 
-    public List<MemberExpression> Expressions { get; } = new();
+    public ICollection<MemberExpression> Expressions { get; } = new List<MemberExpression>();
 
     /// <summary>
     ///     Processes the provided <see cref="T:System.Linq.Expressions.Expression" /> object by adding it to this collection
