@@ -1,19 +1,17 @@
 ﻿#nullable disable
 
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
+using XSpecification.Core;
 using XSpecification.Linq.Pipeline;
-
-using Options = XSpecification.Core.Options;
 
 namespace XSpecification.Linq.Tests.Specs;
 
 public class IncompatibleLinqTestSpec : SpecificationBase<LinqTestModel, IncompatibleLinqTestFilter>
 {
     /// <inheritdoc />
-    public IncompatibleLinqTestSpec(ILogger<IncompatibleLinqTestSpec> logger, IOptions<Options> options, IFilterHandlerPipeline<LinqTestModel> handlerPipeline)
-        : base(logger, options, handlerPipeline)
+    public IncompatibleLinqTestSpec(ILogger<IncompatibleLinqTestSpec> logger, SpecificationConfiguration configuration, IFilterHandlerPipeline<LinqTestModel> handlerPipeline)
+        : base(logger, configuration, handlerPipeline)
     {
         HandleField(f => f.Explicit, m => m.UnmatchingProperty);
         IgnoreField(f => f.Ignored);

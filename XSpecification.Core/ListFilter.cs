@@ -170,7 +170,7 @@ public sealed class ListFilter<T> : IListFilter, IReadOnlyCollection<T>
     }
 
     /// <summary>
-    ///     Проверка на наличие значения фильтрации
+    ///     Returns <c>true</c> when the filter has no values to apply.
     /// </summary>
     public bool IsEmpty()
     {

@@ -21,6 +21,9 @@ public class ConstantFilterHandler : IFilterHandler
     /// <inheritdoc />
     public virtual void Handle(QueryContext context, Action<QueryContext> next)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
         var ret = GetQuery(context);
         context.QueryContainer = context.QueryContainer && ret;
 
@@ -31,11 +34,13 @@ public class ConstantFilterHandler : IFilterHandler
 
     public virtual bool CanHandle(QueryContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         return context.FilterPropertyValue is not IFilter;
     }
 
     protected internal static QueryContainer GetQuery(QueryContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         QueryBase query = new TermQuery { Field = context.IndexFieldName, Value = context.FilterPropertyValue };
         if (context.DisableScoring)
         {

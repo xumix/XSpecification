@@ -1,0 +1,64 @@
+site_name: XSpecification
+site_description: Specification pattern for .NET — LINQ and Elasticsearch backends
+site_url: https://github.com/jit-software/XSpecification
+repo_url: https://github.com/jit-software/XSpecification
+repo_name: jit-software/XSpecification
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting started: getting-started.md
+  - Concepts:
+      - Specifications: concepts/specifications.md
+      - Filter primitives: concepts/filter-primitives.md
+      - Pipeline: concepts/pipeline.md
+  - Backends:
+      - LINQ (EF Core): backends/linq.md
+      - Elasticsearch (NEST 7.x): backends/elasticsearch-nest.md
+      - Elasticsearch (Elastic.Clients.Elasticsearch 8.x): backends/elasticsearch-v8.md
+  - Migration guide: migration.md
+  - Performance: performance.md
+  - Source generator: source-generator.md

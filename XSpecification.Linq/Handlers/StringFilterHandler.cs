@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Collections.Frozen;
+using System.Linq.Expressions;
 using System.Reflection;
 
 using Microsoft.Extensions.Logging;
@@ -10,9 +11,7 @@ namespace XSpecification.Linq.Handlers;
 
 public class StringFilterHandler : IFilterHandler
 {
-    private readonly ILogger<StringFilterHandler> _logger;
-
-    private static readonly IDictionary<string, MethodInfo> TypeMethods =
+    private static readonly FrozenDictionary<string, MethodInfo> TypeMethods =
         new Dictionary<string, MethodInfo>
         {
             {
@@ -23,7 +22,9 @@ public class StringFilterHandler : IFilterHandler
                 typeof(string).GetMethod(nameof(string.StartsWith), new[] { typeof(string) })!
             },
             { nameof(string.EndsWith), typeof(string).GetMethod(nameof(string.EndsWith), new[] { typeof(string) })! },
-        };
+        }.ToFrozenDictionary(StringComparer.Ordinal);
+
+    private readonly ILogger<StringFilterHandler> _logger;
 
     public StringFilterHandler(ILogger<StringFilterHandler> logger)
     {
@@ -33,6 +34,9 @@ public class StringFilterHandler : IFilterHandler
     /// <inheritdoc />
     public virtual void Handle<TModel>(LinqFilterContext<TModel> context, Action<LinqFilterContext<TModel>> next)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
         var ret = GetExpression(context);
         if (ret != default)
         {
@@ -46,6 +50,8 @@ public class StringFilterHandler : IFilterHandler
 
     public virtual bool CanHandle<TModel>(LinqFilterContext<TModel> context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         if (!typeof(StringFilter).IsAssignableFrom(context.FilterProperty!.PropertyType))
         {
             return false;
@@ -56,6 +62,7 @@ public class StringFilterHandler : IFilterHandler
 
     protected static Expression<Func<TModel, bool>>? GetExpression<TModel>(LinqFilterContext<TModel> context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         var propAccessor = context.ModelPropertyExpression!;
         var filter = (StringFilter)context.FilterPropertyValue!;
 
@@ -72,7 +79,7 @@ public class StringFilterHandler : IFilterHandler
             _ => null
         };
 
-        var value = ExpressionExtensions.CreateClousre(filter.Value, typeof(string));
+        var value = ExpressionExtensions.CreateClosure(filter.Value, typeof(string));
         var memberBody = propAccessor.Body;
 
         Expression body;

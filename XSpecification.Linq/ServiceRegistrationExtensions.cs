@@ -1,22 +1,29 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 using XSpecification.Core;
 using XSpecification.Core.Pipeline;
 using XSpecification.Linq.Handlers;
 using XSpecification.Linq.Pipeline;
 
-using Options = XSpecification.Core.Options;
-
 namespace XSpecification.Linq;
 
 public static class ServiceRegistrationExtensions
 {
-    public static OptionsBuilder<Options> AddLinqSpecification(
+    /// <summary>
+    /// Register the LINQ specification backend. Use the optional <paramref name="configure"/>
+    /// callback to customize <see cref="SpecificationConfiguration"/>.
+    /// </summary>
+    public static IServiceCollection AddLinqSpecification(
         this IServiceCollection services,
-        // ReSharper disable once MethodOverloadWithOptionalParameter
-        Action<IRegistrationConfigurator<LinqFilterHandlerCollection>> configureAction)
+        Action<IRegistrationConfigurator<LinqFilterHandlerCollection>> configureAction,
+        Action<SpecificationConfiguration>? configure = null)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configureAction);
+
+        var configuration = new SpecificationConfiguration();
+        configure?.Invoke(configuration);
+        services.AddSingleton(configuration);
 
         var configurator = new RegistrationConfigurator<ISpecification, LinqFilterHandlerCollection>(services);
         services.AddSingleton(typeof(IFilterHandlerPipeline<>), typeof(FilterHandlerPipeline<>));
@@ -32,44 +39,20 @@ public static class ServiceRegistrationExtensions
         configureAction(configurator);
         configurator.Configure();
 
-        return services.AddOptions<Options>();
+        return services;
     }
 
     /// <summary>
-    /// Validates all registered specifications in the service provider.
+    /// Validates all registered LINQ specifications in the service provider by attempting
+    /// to build a filter expression with a default filter instance.
     /// </summary>
     /// <param name="serviceProvider">The service provider containing the specifications to validate.</param>
     /// <exception cref="AggregateException">
-    /// Thrown when one or more specifications fail validation. The inner exceptions contain details of the validation failures.
+    /// Thrown when one or more specifications fail validation. The inner exceptions contain
+    /// details of each validation failure.
     /// </exception>
     public static void ValidateSpecifications(this IServiceProvider serviceProvider)
     {
-        var specs = serviceProvider.GetServices<ISpecification>();
-
-        var agg = new List<Exception>();
-
-        foreach (var spec in specs)
-        {
-            try
-            {
-                var baseType = spec.GetType().GetClosedOfOpenGeneric(typeof(SpecificationBase<,>));
-                if (baseType == null)
-                {
-                    continue;
-                }
-
-                var filterType = baseType.GetGenericArguments()[1];
-                spec.CreateFilterExpression(Activator.CreateInstance(filterType)!);
-            }
-            catch (Exception e)
-            {
-                agg.Add(e);
-            }
-        }
-
-        if (agg.Any())
-        {
-            throw new AggregateException(agg);
-        }
+        SpecificationValidator.Validate<ISpecification>(serviceProvider, (spec, filter) => spec.CreateFilterExpression(filter));
     }
 }

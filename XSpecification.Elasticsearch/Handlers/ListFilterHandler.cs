@@ -21,6 +21,9 @@ public class ListFilterHandler : IFilterHandler
     /// <inheritdoc />
     public virtual void Handle(QueryContext context, Action<QueryContext> next)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
         var ret = GetQuery(context);
         if (ret != default)
         {
@@ -33,6 +36,8 @@ public class ListFilterHandler : IFilterHandler
 
     public virtual bool CanHandle(QueryContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         if (!typeof(IListFilter).IsAssignableFrom(context.FilterProperty!.PropertyType))
         {
             return false;
@@ -43,6 +48,8 @@ public class ListFilterHandler : IFilterHandler
 
     protected static QueryContainer? GetQuery(QueryContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         var value = (IListFilter)context.FilterPropertyValue!;
 
         if (!value.HasValue())

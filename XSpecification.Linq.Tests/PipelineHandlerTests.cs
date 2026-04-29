@@ -1,6 +1,9 @@
 #nullable disable
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 using FluentAssertions;
 
@@ -74,15 +77,58 @@ public class PipelineHandlerTests
 
         traceFilter.Trace.Should().Equal("ShortCircuit");
     }
+
+    [Test]
+    public void Pipeline_Is_Thread_Safe_During_Concurrent_First_Use()
+    {
+        CountingHandler.Reset();
+
+        using var provider = BuildProvider(cfg =>
+        {
+            cfg.FilterHandlers.AddFirst(typeof(CountingHandler));
+        });
+
+        var pipeline = provider.GetRequiredService<IFilterHandlerPipeline<PipelineOrderModel>>();
+
+        const int parallelism = 32;
+        const int iterationsPerThread = 50;
+
+        var exceptions = new ConcurrentBag<Exception>();
+
+        Parallel.For(0, parallelism, _ =>
+        {
+            try
+            {
+                for (var i = 0; i < iterationsPerThread; i++)
+                {
+                    var traceFilter = new TraceFilter();
+                    var ctx = new LinqFilterContext<PipelineOrderModel>
+                    {
+                        FilterProperty = typeof(PipelineOrderFilter).GetProperty(nameof(PipelineOrderFilter.Trace)),
+                        FilterPropertyValue = traceFilter,
+                        ModelProperty = typeof(PipelineOrderModel).GetProperty(nameof(PipelineOrderModel.Trace)),
+                    };
+                    pipeline.Execute(ctx);
+                }
+            }
+            catch (Exception ex)
+            {
+                exceptions.Add(ex);
+            }
+        });
+
+        exceptions.Should().BeEmpty();
+        CountingHandler.HandlerInstanceCount.Should().Be(1, "handler must be a singleton resolved exactly once");
+    }
 }
 
 public class PipelineOrderSpec : SpecificationBase<PipelineOrderModel, PipelineOrderFilter>
 {
     public PipelineOrderSpec(
         ILogger<PipelineOrderSpec> logger,
-        Microsoft.Extensions.Options.IOptions<Options> options,
+        SpecificationConfiguration configuration,
         IFilterHandlerPipeline<PipelineOrderModel> handlerPipeline)
-        : base(logger, options, handlerPipeline)
+        : base(logger, configuration, handlerPipeline)
     {
     }
 }
@@ -144,4 +190,25 @@ public class TraceHandlerShortCircuit : IFilterHandler
     {
         return context.FilterPropertyValue is TraceFilter;
     }
+}
+
+public class CountingHandler : IFilterHandler
+{
+    private static int _instanceCount;
+
+    public CountingHandler()
+    {
+        System.Threading.Interlocked.Increment(ref _instanceCount);
+    }
+
+    public static int HandlerInstanceCount => _instanceCount;
+
+    public static void Reset() => System.Threading.Interlocked.Exchange(ref _instanceCount, 0);
+
+    public void Handle<TModel>(LinqFilterContext<TModel> context, Action<LinqFilterContext<TModel>> next)
+    {
+        next(context);
+    }
+
+    public bool CanHandle<TModel>(LinqFilterContext<TModel> context) => true;
 }

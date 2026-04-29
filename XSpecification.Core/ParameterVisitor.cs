@@ -30,6 +30,10 @@ public class ParameterVisitor : ExpressionVisitor
         LambdaExpression toExpression,
         Func<Expression, Expression, Expression> mergeFunc)
     {
+        ArgumentNullException.ThrowIfNull(fromExpression);
+        ArgumentNullException.ThrowIfNull(toExpression);
+        ArgumentNullException.ThrowIfNull(mergeFunc);
+
         var newBody = new ParameterVisitor(toExpression.Parameters, fromExpression.Parameters)
             .VisitAndConvert(toExpression.Body, "Merge");
         return Expression.Lambda(mergeFunc(fromExpression.Body, newBody), fromExpression.Parameters);
@@ -45,6 +49,9 @@ public class ParameterVisitor : ExpressionVisitor
 
     public static LambdaExpression AndAlso(LambdaExpression fromExpression, LambdaExpression toExpression)
     {
+        ArgumentNullException.ThrowIfNull(fromExpression);
+        ArgumentNullException.ThrowIfNull(toExpression);
+
         var newBody = new ParameterVisitor(toExpression.Parameters, fromExpression.Parameters)
             .VisitAndConvert(toExpression.Body, "AndAlso");
         return Expression.Lambda(Expression.AndAlso(fromExpression.Body, newBody), fromExpression.Parameters);
@@ -57,6 +64,9 @@ public class ParameterVisitor : ExpressionVisitor
 
     public static LambdaExpression OrElse(LambdaExpression fromExpression, LambdaExpression toExpression)
     {
+        ArgumentNullException.ThrowIfNull(fromExpression);
+        ArgumentNullException.ThrowIfNull(toExpression);
+
         var newBody = new ParameterVisitor(toExpression.Parameters, fromExpression.Parameters)
             .VisitAndConvert(toExpression.Body, "OrElse");
         return Expression.Lambda(Expression.OrElse(fromExpression.Body, newBody), fromExpression.Parameters);

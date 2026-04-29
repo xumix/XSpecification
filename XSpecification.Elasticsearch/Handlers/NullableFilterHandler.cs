@@ -21,6 +21,9 @@ public class NullableFilterHandler : IFilterHandler
     /// <inheritdoc />
     public virtual void Handle(QueryContext context, Action<QueryContext> next)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
         var ret = GetQuery(context);
         if (ret != default)
         {
@@ -35,6 +38,8 @@ public class NullableFilterHandler : IFilterHandler
 
     public virtual bool CanHandle(QueryContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         if (!typeof(INullableFilter).IsAssignableFrom(context.FilterProperty!.PropertyType))
         {
             return false;
@@ -45,6 +50,8 @@ public class NullableFilterHandler : IFilterHandler
 
     protected static QueryContainer? GetQuery(QueryContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         var value = (INullableFilter)context.FilterPropertyValue!;
         var fieldName = context.IndexFieldName;
 

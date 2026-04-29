@@ -74,7 +74,7 @@ namespace XSpecification.Elastic.Tests
             var context = new SpecimenContext(fixture);
             for (var i = 0; i < 10; i++)
             {
-                var filter = context.Create<ElsaticTestFilter>();
+                var filter = context.Create<ElasticTestFilter>();
                 var expression = spec.CreateFilterQuery(filter);
             }
         }
@@ -87,7 +87,7 @@ namespace XSpecification.Elastic.Tests
         //     using var dbContext = _serviceProvider.GetRequiredService<TestContext>();
         //     dbContext.Database.EnsureCreated();
         //
-        //     var filter = new ElsaticTestFilter
+        //     var filter = new ElasticTestFilter
         //     {
         //         Date = DateTime.Today,
         //         Id = 123,
@@ -144,13 +144,13 @@ namespace XSpecification.Elastic.Tests
         {
             var spec = _serviceProvider.GetRequiredService<UnhandledTestSpec>();
 
-            var filter = new ElsaticTestFilter();
+            var filter = new ElasticTestFilter();
 
             Assert.That(() =>
                 {
                     var expression = spec.CreateFilterQuery(filter);
                 },
-                Throws.InstanceOf<InvalidOperationException>().And.Message.Contains(nameof(ElsaticTestFilter.Explicit)));
+                Throws.InstanceOf<InvalidOperationException>().And.Message.Contains(nameof(ElasticTestFilter.Explicit)));
         }
 
         [Test]
@@ -158,14 +158,14 @@ namespace XSpecification.Elastic.Tests
         {
             var spec = _serviceProvider.GetRequiredService<IncompatibleLinqTestSpec>();
 
-            var filter = new IncompatibleElsaticTestFilter { Incompatible = new ListFilter<int> { 1, 2 } };
+            var filter = new IncompatibleElasticTestFilter { Incompatible = new ListFilter<int> { 1, 2 } };
 
             Assert.That(() =>
                 {
                     var expression = spec.CreateFilterQuery(filter);
                 },
                 Throws.InstanceOf<AggregateException>()
-                      .And.Message.Contains(nameof(IncompatibleElsaticTestFilter.Incompatible)));
+                      .And.Message.Contains(nameof(IncompatibleElasticTestFilter.Incompatible)));
         }
 
         [Test]

@@ -1,20 +1,18 @@
 ﻿#nullable disable
 
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
+using XSpecification.Core;
 using XSpecification.Elasticsearch;
 using XSpecification.Elasticsearch.Pipeline;
 
-using Options = XSpecification.Core.Options;
-
 namespace XSpecification.Elastic.Tests.Specs;
 
-public class IncompatibleLinqTestSpec : SpecificationBase<ElasticTestModel, IncompatibleElsaticTestFilter>
+public class IncompatibleLinqTestSpec : SpecificationBase<ElasticTestModel, IncompatibleElasticTestFilter>
 {
     /// <inheritdoc />
-    public IncompatibleLinqTestSpec(ILogger<IncompatibleLinqTestSpec> logger, IOptions<Options> options, IFilterHandlerPipeline handlerPipeline)
-        : base(logger, options, handlerPipeline)
+    public IncompatibleLinqTestSpec(ILogger<IncompatibleLinqTestSpec> logger, SpecificationConfiguration configuration, IFilterHandlerPipeline handlerPipeline)
+        : base(logger, configuration, handlerPipeline)
     {
         HandleField(f => f.Explicit, m => m.UnmatchingProperty);
         IgnoreField(f => f.Ignored);

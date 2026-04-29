@@ -3,22 +3,20 @@
 using System;
 
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 using Nest;
 
+using XSpecification.Core;
 using XSpecification.Elasticsearch;
 using XSpecification.Elasticsearch.Pipeline;
 
-using Options = XSpecification.Core.Options;
-
 namespace XSpecification.Elastic.Tests.Specs;
 
-public class LinqTestSpec : SpecificationBase<ElasticTestModel, ElsaticTestFilter>
+public class LinqTestSpec : SpecificationBase<ElasticTestModel, ElasticTestFilter>
 {
     /// <inheritdoc />
-    public LinqTestSpec(ILogger<LinqTestSpec> logger, IOptions<Options> options, IFilterHandlerPipeline handlerPipeline)
-        : base(logger, options, handlerPipeline)
+    public LinqTestSpec(ILogger<LinqTestSpec> logger, SpecificationConfiguration configuration, IFilterHandlerPipeline handlerPipeline)
+        : base(logger, configuration, handlerPipeline)
     {
         IgnoreField(f => f.Ignored);
         HandleField(f => f.Explicit, m => m.UnmatchingProperty);

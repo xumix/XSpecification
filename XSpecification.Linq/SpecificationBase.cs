@@ -4,11 +4,9 @@ using System.Reflection;
 using LinqKit;
 
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
+using XSpecification.Core;
 using XSpecification.Linq.Pipeline;
-
-using Options = XSpecification.Core.Options;
 
 namespace XSpecification.Linq;
 
@@ -23,17 +21,52 @@ public abstract class SpecificationBase<TModel, TFilter>
 
     protected SpecificationBase(
         ILogger<SpecificationBase<TModel, TFilter>> logger,
-        IOptions<Options> options,
+        SpecificationConfiguration configuration,
         IFilterHandlerPipeline<TModel> handlerPipeline)
-        : base(options.Value.DisablePropertyAutoHandling)
+        : base((configuration ?? throw new ArgumentNullException(nameof(configuration))).DisablePropertyAutoHandling)
     {
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(handlerPipeline);
+
         _logger = logger;
         _handlerPipeline = handlerPipeline;
     }
 
+    /// <summary>
+    /// Backward-compatible constructor that accepts the legacy <see cref="Options"/> wrapped in
+    /// <see cref="Microsoft.Extensions.Options.IOptions{TOptions}"/>. Prefer the
+    /// <see cref="SpecificationConfiguration"/> overload.
+    /// </summary>
+    [Obsolete("Use the SpecificationConfiguration overload. This constructor will be removed in 3.0.")]
+    protected SpecificationBase(
+        ILogger<SpecificationBase<TModel, TFilter>> logger,
+        Microsoft.Extensions.Options.IOptions<Options> options,
+        IFilterHandlerPipeline<TModel> handlerPipeline)
+        : this(
+            logger,
+            (options ?? throw new ArgumentNullException(nameof(options))).Value.ToConfiguration(),
+            handlerPipeline)
+    {
+    }
+
     public virtual Expression<Func<TModel, bool>> CreateFilterExpression(TFilter filter)
     {
+        ArgumentNullException.ThrowIfNull(filter);
         return CreateFilterResult(filter);
+    }
+
+    /// <summary>
+    /// Asynchronous variant of <see cref="CreateFilterExpression"/>. The current LINQ backend builds
+    /// expressions synchronously; the async signature is provided as a forward-compatible contract
+    /// (e.g. for future I/O-bound visitors) and respects <paramref name="cancellationToken"/>.
+    /// </summary>
+    public virtual ValueTask<Expression<Func<TModel, bool>>> CreateFilterExpressionAsync(
+        TFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(CreateFilterExpression(filter));
     }
 
     protected virtual Expression<Func<TModel, bool>>? CreateExpressionFromFilterProperty<TProperty>(
@@ -43,9 +76,12 @@ public abstract class SpecificationBase<TModel, TFilter>
     {
         return CreateResultFromFilterProperty(filterProp, modelProp, sourceValue);
     }
+
     protected override Expression<Func<TModel, bool>> CombineResults(
         IReadOnlyCollection<Expression<Func<TModel, bool>>> results)
     {
+        ArgumentNullException.ThrowIfNull(results);
+
         var result = PredicateBuilder.New<TModel>(true);
         foreach (var expression in results)
         {
@@ -61,6 +97,8 @@ public abstract class SpecificationBase<TModel, TFilter>
         Expression<Func<TModel, TProperty>>? modelProp,
         object? sourceValue)
     {
+        ArgumentNullException.ThrowIfNull(filterProp);
+
         if (modelProp == null || sourceValue == null
             || (sourceValue is string sourceText && string.IsNullOrEmpty(sourceText)))
         {
@@ -93,9 +131,81 @@ public abstract class SpecificationBase<TModel, TFilter>
         }
     }
 
+    /// <summary>
+    /// Register a filter property whose value is matched against any of the supplied model
+    /// properties (logical OR). Replaces the manual pattern of calling
+    /// <c>CreateExpressionFromFilterProperty</c> for each model property and OR-ing the results.
+    /// </summary>
+    protected void OrGroup<TFilterProp>(
+        Expression<Func<TFilter, TFilterProp>> filterProp,
+        params Expression<Func<TModel, TFilterProp>>[] modelProps)
+    {
+        ArgumentNullException.ThrowIfNull(filterProp);
+        ArgumentNullException.ThrowIfNull(modelProps);
+        if (modelProps.Length == 0)
+        {
+            throw new ArgumentException("At least one model property must be specified.", nameof(modelProps));
+        }
+
+        var valueGetter = filterProp.Compile();
+        HandleField(filterProp, (prop, filter) =>
+        {
+            var value = valueGetter(filter);
+            Expression<Func<TModel, bool>>? acc = null;
+            foreach (var modelProp in modelProps)
+            {
+                var expr = CreateResultFromFilterProperty(prop, modelProp, value);
+                if (expr == null)
+                {
+                    continue;
+                }
+
+                acc = acc == null ? expr : acc.Or(expr);
+            }
+
+            return acc;
+        });
+    }
+
+    /// <summary>
+    /// Register a filter property whose value must match all of the supplied model properties
+    /// (logical AND).
+    /// </summary>
+    protected void AndGroup<TFilterProp>(
+        Expression<Func<TFilter, TFilterProp>> filterProp,
+        params Expression<Func<TModel, TFilterProp>>[] modelProps)
+    {
+        ArgumentNullException.ThrowIfNull(filterProp);
+        ArgumentNullException.ThrowIfNull(modelProps);
+        if (modelProps.Length == 0)
+        {
+            throw new ArgumentException("At least one model property must be specified.", nameof(modelProps));
+        }
+
+        var valueGetter = filterProp.Compile();
+        HandleField(filterProp, (prop, filter) =>
+        {
+            var value = valueGetter(filter);
+            Expression<Func<TModel, bool>>? acc = null;
+            foreach (var modelProp in modelProps)
+            {
+                var expr = CreateResultFromFilterProperty(prop, modelProp, value);
+                if (expr == null)
+                {
+                    continue;
+                }
+
+                acc = acc == null ? expr : acc.And(expr);
+            }
+
+            return acc;
+        });
+    }
+
     /// <inheritdoc />
     LambdaExpression ISpecification.CreateFilterExpression(object filter)
     {
+        ArgumentNullException.ThrowIfNull(filter);
         return CreateFilterExpression((TFilter)filter);
     }
 }

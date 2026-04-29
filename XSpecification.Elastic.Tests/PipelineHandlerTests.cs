@@ -80,9 +80,9 @@ public class ElasticPipelineOrderSpec : SpecificationBase<ElasticPipelineOrderMo
 {
     public ElasticPipelineOrderSpec(
         ILogger<ElasticPipelineOrderSpec> logger,
-        Microsoft.Extensions.Options.IOptions<Options> options,
+        SpecificationConfiguration configuration,
         IFilterHandlerPipeline handlerPipeline)
-        : base(logger, options, handlerPipeline)
+        : base(logger, configuration, handlerPipeline)
     {
     }
 }

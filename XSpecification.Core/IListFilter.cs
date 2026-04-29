@@ -10,7 +10,7 @@ public interface IListFilter : ICloneable, IEnumerable, INullableFilter
     bool IsInverted { get; set; }
 
     /// <summary>
-    ///     Тип значения в фильтре
+    ///     Element type stored in the filter (e.g. <see cref="int"/> for <c>ListFilter&lt;int&gt;</c>).
     /// </summary>
     Type ElementType { get; }
 

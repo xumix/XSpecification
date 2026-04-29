@@ -11,9 +11,13 @@
     <File Path="StyleCop.Analyzers.ruleset" />
     <File Path="stylecop.json" />
   </Folder>
+  <Project Path="XSpecification.Benchmarks/XSpecification.Benchmarks.csproj" />
   <Project Path="XSpecification.Core/XSpecification.Core.csproj" />
   <Project Path="XSpecification.Elastic.Tests/XSpecification.Elastic.Tests.csproj" />
+  <Project Path="XSpecification.Elasticsearch.Abstractions/XSpecification.Elasticsearch.Abstractions.csproj" />
+  <Project Path="XSpecification.Elasticsearch.V8/XSpecification.Elasticsearch.V8.csproj" />
   <Project Path="XSpecification.Elasticsearch/XSpecification.Elasticsearch.csproj" />
   <Project Path="XSpecification.Linq.Tests/XSpecification.Linq.Tests.csproj" />
   <Project Path="XSpecification.Linq/XSpecification.Linq.csproj" />
+  <Project Path="XSpecification.SourceGenerator/XSpecification.SourceGenerator.csproj" />
 </Solution>

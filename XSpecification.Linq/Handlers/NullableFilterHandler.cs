@@ -19,6 +19,9 @@ public class NullableFilterHandler : IFilterHandler
     /// <inheritdoc />
     public virtual void Handle<TModel>(LinqFilterContext<TModel> context, Action<LinqFilterContext<TModel>> next)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
         var ret = GetExpression(context);
         if (ret != default)
         {
@@ -33,6 +36,8 @@ public class NullableFilterHandler : IFilterHandler
 
     public virtual bool CanHandle<TModel>(LinqFilterContext<TModel> context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         if (!typeof(INullableFilter).IsAssignableFrom(context.FilterProperty!.PropertyType))
         {
             return false;
@@ -43,6 +48,7 @@ public class NullableFilterHandler : IFilterHandler
 
     protected static Expression<Func<TModel, bool>>? GetExpression<TModel>(LinqFilterContext<TModel> context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         var propAccessor = context.ModelPropertyExpression!;
         var propertyType = context.ModelProperty!.PropertyType;
         var value = (INullableFilter)context.FilterPropertyValue!;

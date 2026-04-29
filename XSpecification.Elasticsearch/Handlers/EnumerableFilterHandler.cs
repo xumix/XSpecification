@@ -25,6 +25,9 @@ public class EnumerableFilterHandler : IFilterHandler
     /// <inheritdoc />
     public virtual void Handle(QueryContext context, Action<QueryContext> next)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
         var ret = GetQuery(context);
         if (ret != default)
         {
@@ -38,12 +41,15 @@ public class EnumerableFilterHandler : IFilterHandler
 
     public virtual bool CanHandle(QueryContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         var value = context.FilterPropertyValue!;
         return value is IEnumerable && value is not string && value is not IListFilter;
     }
 
     protected internal static QueryContainer GetQuery(QueryContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         var propertyType = context.ModelProperty!.PropertyType;
         var enumerable = (IEnumerable)context.FilterPropertyValue!;
         var fieldName = context.IndexFieldName;

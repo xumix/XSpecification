@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Frozen;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -8,7 +9,7 @@ namespace XSpecification.Core
     {
         public const BindingFlags CommonFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
-        private static readonly IDictionary<string, MethodInfo> TypeMethods =
+        private static readonly FrozenDictionary<string, MethodInfo> TypeMethods =
             new Dictionary<string, MethodInfo>
             {
                 {
@@ -25,11 +26,11 @@ namespace XSpecification.Core
                 },
                 {
                     nameof(Enumerable.ToArray), typeof(Enumerable)
-                                             .GetMethods()
-                                             .First(m => m.Name == nameof(Enumerable.ToArray) &&
-                                                         m.GetParameters().Length == 1)
-                }
-            };
+                                                .GetMethods()
+                                                .First(m => m.Name == nameof(Enumerable.ToArray) &&
+                                                            m.GetParameters().Length == 1)
+                },
+            }.ToFrozenDictionary(StringComparer.Ordinal);
 
         public static Type? GetClosedOfOpenGeneric(this Type? toCheck, Type generic)
         {
@@ -68,6 +69,8 @@ namespace XSpecification.Core
             this TObject target,
             Expression<Func<TObject, TMember>> func)
         {
+            ArgumentNullException.ThrowIfNull(func);
+
             var res = func.Body is UnaryExpression unary ? unary.Operand : func.Body;
 
             if (res is MemberExpression me)
@@ -81,12 +84,13 @@ namespace XSpecification.Core
             }
 
             throw new ArgumentException(
-                "Невалидное выражение. Поддерживается только ображение к свойству и вызов метода.",
+                "Invalid expression. Only property access and method calls are supported.",
                 nameof(func));
         }
 
         public static bool IsNullable(this Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
             return !type.IsValueType || Nullable.GetUnderlyingType(type) != null;
         }
 
@@ -127,6 +131,8 @@ namespace XSpecification.Core
 
         public static Type GetGenericElementType(this Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             // Short-circuit for Array types
             if (typeof(Array).IsAssignableFrom(type))
             {

@@ -22,6 +22,9 @@ public class RangeFilterHandler : IFilterHandler
     /// <inheritdoc />
     public virtual void Handle(QueryContext context, Action<QueryContext> next)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
         var ret = GetQuery(context);
         if (ret != default)
         {
@@ -34,6 +37,8 @@ public class RangeFilterHandler : IFilterHandler
 
     public virtual bool CanHandle(QueryContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         if (!typeof(IRangeFilter).IsAssignableFrom(context.FilterProperty!.PropertyType))
         {
             return false;
@@ -44,6 +49,8 @@ public class RangeFilterHandler : IFilterHandler
 
     protected internal QueryContainer? GetQuery(QueryContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         var rangeFilter = (IRangeFilter)context.FilterPropertyValue!;
         var fieldName = context.IndexFieldName;
         var boost = context.ModelProperty!.GetCustomAttribute<NumberAttribute>()?.Boost

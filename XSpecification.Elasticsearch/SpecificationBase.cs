@@ -1,10 +1,7 @@
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 using Nest;
 
@@ -12,8 +9,6 @@ using Newtonsoft.Json.Serialization;
 
 using XSpecification.Core;
 using XSpecification.Elasticsearch.Pipeline;
-
-using Options = XSpecification.Core.Options;
 
 namespace XSpecification.Elasticsearch;
 
@@ -30,17 +25,52 @@ public abstract class SpecificationBase<TModel, TFilter>
 
     protected SpecificationBase(
         ILogger<SpecificationBase<TModel, TFilter>> logger,
-        IOptions<Options> options,
+        SpecificationConfiguration configuration,
         IFilterHandlerPipeline handlerPipeline)
-        : base(options.Value.DisablePropertyAutoHandling)
+        : base((configuration ?? throw new ArgumentNullException(nameof(configuration))).DisablePropertyAutoHandling)
     {
+        ArgumentNullException.ThrowIfNull(logger);
+        ArgumentNullException.ThrowIfNull(handlerPipeline);
+
         _logger = logger;
         _handlerPipeline = handlerPipeline;
     }
 
+    /// <summary>
+    /// Backward-compatible constructor that accepts the legacy <see cref="Options"/> wrapped in
+    /// <see cref="Microsoft.Extensions.Options.IOptions{TOptions}"/>. Prefer the
+    /// <see cref="SpecificationConfiguration"/> overload.
+    /// </summary>
+    [Obsolete("Use the SpecificationConfiguration overload. This constructor will be removed in 3.0.")]
+    protected SpecificationBase(
+        ILogger<SpecificationBase<TModel, TFilter>> logger,
+        Microsoft.Extensions.Options.IOptions<Options> options,
+        IFilterHandlerPipeline handlerPipeline)
+        : this(
+            logger,
+            (options ?? throw new ArgumentNullException(nameof(options))).Value.ToConfiguration(),
+            handlerPipeline)
+    {
+    }
+
     public virtual QueryContainer CreateFilterQuery(TFilter filter)
     {
+        ArgumentNullException.ThrowIfNull(filter);
         return CreateFilterResult(filter);
+    }
+
+    /// <summary>
+    /// Asynchronous variant of <see cref="CreateFilterQuery"/>. The current Elasticsearch backend
+    /// builds queries synchronously; the async signature is provided as a forward-compatible
+    /// contract (e.g. for future I/O-bound visitors) and respects <paramref name="cancellationToken"/>.
+    /// </summary>
+    public virtual ValueTask<QueryContainer> CreateFilterQueryAsync(
+        TFilter filter,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(filter);
+        cancellationToken.ThrowIfCancellationRequested();
+        return ValueTask.FromResult(CreateFilterQuery(filter));
     }
 
     protected virtual QueryContainer? CreateQueryFromFilterProperty<TProperty>(
@@ -50,8 +80,11 @@ public abstract class SpecificationBase<TModel, TFilter>
     {
         return CreateResultFromFilterProperty(filterProp, modelProp, sourceValue);
     }
+
     protected override QueryContainer CombineResults(IReadOnlyCollection<QueryContainer> results)
     {
+        ArgumentNullException.ThrowIfNull(results);
+
         var result = results
             .Where(x => x != null)
             .OrderBy(x => (x as IQueryContainer)?.Bool?.Filter?.Any() ?? false)
@@ -65,6 +98,8 @@ public abstract class SpecificationBase<TModel, TFilter>
         Expression<Func<TModel, TProperty>>? modelProp,
         object? sourceValue)
     {
+        ArgumentNullException.ThrowIfNull(filterProp);
+
         if (modelProp == null || sourceValue == null
             || (sourceValue is string sourceText && string.IsNullOrEmpty(sourceText)))
         {
@@ -108,10 +143,82 @@ public abstract class SpecificationBase<TModel, TFilter>
         return QueryHelpers.GetPropertyPath(indexPath, NamingStrategy);
     }
 
+    /// <summary>
+    /// Register a filter property whose value is matched against any of the supplied model
+    /// properties (logical OR). Replaces the manual pattern of calling
+    /// <c>CreateQueryFromFilterProperty</c> for each model property and combining the results
+    /// with <c>||</c>.
+    /// </summary>
+    protected void OrGroup<TFilterProp>(
+        Expression<Func<TFilter, TFilterProp>> filterProp,
+        params Expression<Func<TModel, TFilterProp>>[] modelProps)
+    {
+        ArgumentNullException.ThrowIfNull(filterProp);
+        ArgumentNullException.ThrowIfNull(modelProps);
+        if (modelProps.Length == 0)
+        {
+            throw new ArgumentException("At least one model property must be specified.", nameof(modelProps));
+        }
+
+        var valueGetter = filterProp.Compile();
+        HandleField(filterProp, (prop, filter) =>
+        {
+            var value = valueGetter(filter);
+            QueryContainer? acc = null;
+            foreach (var modelProp in modelProps)
+            {
+                var qc = CreateResultFromFilterProperty(prop, modelProp, value);
+                if (qc == null)
+                {
+                    continue;
+                }
+
+                acc = acc == null ? qc : acc || qc;
+            }
+
+            return acc;
+        });
+    }
+
+    /// <summary>
+    /// Register a filter property whose value must match all of the supplied model properties
+    /// (logical AND).
+    /// </summary>
+    protected void AndGroup<TFilterProp>(
+        Expression<Func<TFilter, TFilterProp>> filterProp,
+        params Expression<Func<TModel, TFilterProp>>[] modelProps)
+    {
+        ArgumentNullException.ThrowIfNull(filterProp);
+        ArgumentNullException.ThrowIfNull(modelProps);
+        if (modelProps.Length == 0)
+        {
+            throw new ArgumentException("At least one model property must be specified.", nameof(modelProps));
+        }
+
+        var valueGetter = filterProp.Compile();
+        HandleField(filterProp, (prop, filter) =>
+        {
+            var value = valueGetter(filter);
+            QueryContainer? acc = null;
+            foreach (var modelProp in modelProps)
+            {
+                var qc = CreateResultFromFilterProperty(prop, modelProp, value);
+                if (qc == null)
+                {
+                    continue;
+                }
+
+                acc = acc == null ? qc : acc && qc;
+            }
+
+            return acc;
+        });
+    }
 
     /// <inheritdoc />
     QueryContainer ISpecification.CreateFilterQuery(object filter)
     {
+        ArgumentNullException.ThrowIfNull(filter);
         return CreateFilterQuery((TFilter)filter);
     }
 }

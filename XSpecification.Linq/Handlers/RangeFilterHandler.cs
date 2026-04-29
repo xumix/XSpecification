@@ -19,6 +19,9 @@ public class RangeFilterHandler : IFilterHandler
     /// <inheritdoc />
     public virtual void Handle<TModel>(LinqFilterContext<TModel> context, Action<LinqFilterContext<TModel>> next)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
         var ret = GetExpression(context);
         if (ret != default)
         {
@@ -31,6 +34,8 @@ public class RangeFilterHandler : IFilterHandler
 
     public virtual bool CanHandle<TModel>(LinqFilterContext<TModel> context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         if (!typeof(IRangeFilter).IsAssignableFrom(context.FilterProperty!.PropertyType))
         {
             return false;
@@ -41,6 +46,7 @@ public class RangeFilterHandler : IFilterHandler
 
     protected internal Expression<Func<TModel, bool>>? GetExpression<TModel>(LinqFilterContext<TModel> context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         var propAccessor = context.ModelPropertyExpression!;
         var rangeFilter = (IRangeFilter)context.FilterPropertyValue!;
 
@@ -66,8 +72,8 @@ public class RangeFilterHandler : IFilterHandler
             elementType = typeof(Nullable<>).MakeGenericType(elementType);
         }
 
-        var start = () => ExpressionExtensions.CreateClousre(rangeFilter.Start, elementType);
-        var end = () => ExpressionExtensions.CreateClousre(rangeFilter.End, elementType);
+        var start = () => ExpressionExtensions.CreateClosure(rangeFilter.Start, elementType);
+        var end = () => ExpressionExtensions.CreateClosure(rangeFilter.End, elementType);
 
         var more = () => rangeFilter.IsExclusive
             ? Expression.GreaterThan(memberBody, start())

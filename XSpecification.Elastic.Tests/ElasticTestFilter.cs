@@ -1,4 +1,4 @@
-﻿#nullable disable
+#nullable disable
 
 using System;
 
@@ -6,7 +6,7 @@ using XSpecification.Core;
 
 namespace XSpecification.Elastic.Tests;
 
-public class ElsaticTestFilter
+public class ElasticTestFilter
 {
     public int? Id { get; set; }
 

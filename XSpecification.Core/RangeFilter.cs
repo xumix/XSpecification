@@ -98,7 +98,7 @@ public class RangeFilter<T> : ICloneable, IRangeFilter
     }
 
     /// <summary>
-    ///     Сброс фильтра
+    ///     Resets the filter to its default (empty) state.
     /// </summary>
     public void Reset()
     {

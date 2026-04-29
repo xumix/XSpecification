@@ -19,6 +19,9 @@ public class ConstantFilterHandler : IFilterHandler
     /// <inheritdoc />
     public virtual void Handle<TModel>(LinqFilterContext<TModel> context, Action<LinqFilterContext<TModel>> next)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
         var ret = GetExpression<TModel>(context.FilterProperty!.PropertyType,
             context.ModelPropertyExpression!,
             context.FilterPropertyValue);
@@ -31,6 +34,7 @@ public class ConstantFilterHandler : IFilterHandler
 
     public virtual bool CanHandle<TModel>(LinqFilterContext<TModel> context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         return context.FilterPropertyValue is not IFilter;
     }
 
@@ -39,7 +43,10 @@ public class ConstantFilterHandler : IFilterHandler
         LambdaExpression propAccessor,
         object? value)
     {
-        var valueExpr = ExpressionExtensions.CreateClousre(value, propAccessor.Body.Type);
+        ArgumentNullException.ThrowIfNull(filterPropertyType);
+        ArgumentNullException.ThrowIfNull(propAccessor);
+
+        var valueExpr = ExpressionExtensions.CreateClosure(value, propAccessor.Body.Type);
 
         var body = Expression.Equal(propAccessor.Body, valueExpr);
         var lam = (Expression<Func<TModel, bool>>)Expression.Lambda(body, propAccessor.Parameters);

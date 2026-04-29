@@ -27,6 +27,8 @@ public sealed class ExpressionMemberVisitor : ExpressionVisitor
     /// </returns>
     protected override Expression VisitMember(MemberExpression node)
     {
+        ArgumentNullException.ThrowIfNull(node);
+
         if (node.Expression is MemberExpression expression)
         {
             VisitMember(expression);

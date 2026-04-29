@@ -10,6 +10,7 @@ public class RegistrationConfigurator<TSpec, TFilterCollection> : IRegistrationC
 
     public RegistrationConfigurator(IServiceCollection services)
     {
+        ArgumentNullException.ThrowIfNull(services);
         _services = services;
     }
 
@@ -26,6 +27,7 @@ public class RegistrationConfigurator<TSpec, TFilterCollection> : IRegistrationC
 
     public void AddSpecifications(params Type[] specTypes)
     {
+        ArgumentNullException.ThrowIfNull(specTypes);
         _specifications.AddRange(specTypes);
     }
 

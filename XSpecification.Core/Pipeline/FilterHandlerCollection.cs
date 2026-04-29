@@ -2,41 +2,75 @@
 
 namespace XSpecification.Core.Pipeline;
 
-public abstract class FilterHandlerCollection : LinkedList<Type>, IFilterHandlerCollection
+/// <summary>
+/// Default <see cref="IFilterHandlerCollection"/> implementation. Encapsulates a
+/// <see cref="LinkedList{T}"/> of handler types instead of inheriting from it (inheritance
+/// from a mutable framework collection is an anti-pattern that leaks the entire surface).
+/// </summary>
+public abstract class FilterHandlerCollection : IFilterHandlerCollection
 {
+    private readonly LinkedList<Type> _handlers = new();
+
+    /// <inheritdoc />
+    public int Count => _handlers.Count;
+
+    /// <inheritdoc />
+    public void AddLast(Type filterHandler)
+    {
+        ArgumentNullException.ThrowIfNull(filterHandler);
+        _handlers.AddLast(filterHandler);
+    }
+
+    /// <inheritdoc />
+    public void AddFirst(Type filterHandler)
+    {
+        ArgumentNullException.ThrowIfNull(filterHandler);
+        _handlers.AddFirst(filterHandler);
+    }
+
+    /// <inheritdoc />
     public void AddAfter<TFilter>(Type filterHandler)
     {
-        var type = typeof(TFilter);
-        var node = Find(type);
-        if (node == null)
-        {
-            throw new ArgumentException($"Unable to find filter {type} in pipeline.");
-        }
+        ArgumentNullException.ThrowIfNull(filterHandler);
 
-        AddAfter(node, filterHandler);
+        var type = typeof(TFilter);
+        var node = _handlers.Find(type)
+            ?? throw new ArgumentException($"Unable to find filter {type} in pipeline.");
+        _handlers.AddAfter(node, filterHandler);
     }
 
+    /// <inheritdoc />
     public void AddBefore<TFilter>(Type filterHandler)
     {
+        ArgumentNullException.ThrowIfNull(filterHandler);
+
         var type = typeof(TFilter);
-        var node = Find(type);
-        if (node == null)
+        var node = _handlers.Find(type)
+            ?? throw new ArgumentException($"Unable to find filter {type} in pipeline.");
+        _handlers.AddBefore(node, filterHandler);
+    }
+
+    /// <inheritdoc />
+    public void Clear() => _handlers.Clear();
+
+    /// <inheritdoc />
+    public bool Contains(Type filterHandler)
+    {
+        ArgumentNullException.ThrowIfNull(filterHandler);
+        return _handlers.Contains(filterHandler);
+    }
+
+    /// <inheritdoc />
+    public IEnumerable<Type> EnumerateReversed()
+    {
+        for (var node = _handlers.Last; node != null; node = node.Previous)
         {
-            throw new ArgumentException($"Unable to find filter {type} in pipeline.");
+            yield return node.Value;
         }
-
-        AddBefore(node, filterHandler);
     }
 
-    /// <inheritdoc/>
-    public new IEnumerator<Type> GetEnumerator()
-    {
-        return new FilterHandlerCollectionEnumerator(First);
-    }
+    /// <inheritdoc />
+    public IEnumerator<Type> GetEnumerator() => _handlers.GetEnumerator();
 
-    /// <inheritdoc/>
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

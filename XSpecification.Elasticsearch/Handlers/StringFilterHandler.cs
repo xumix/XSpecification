@@ -22,6 +22,9 @@ public class StringFilterHandler : IFilterHandler
     /// <inheritdoc />
     public virtual void Handle(QueryContext context, Action<QueryContext> next)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
         var ret = GetQuery(context);
         if (ret != default)
         {
@@ -35,6 +38,8 @@ public class StringFilterHandler : IFilterHandler
 
     public virtual bool CanHandle(QueryContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         if (!typeof(StringFilter).IsAssignableFrom(context.FilterProperty!.PropertyType))
         {
             return false;
@@ -45,6 +50,7 @@ public class StringFilterHandler : IFilterHandler
 
     protected static QueryContainer? GetQuery(QueryContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         var stringFilter = (StringFilter)context.FilterPropertyValue!;
         var isFullText = context.ModelProperty!.GetCustomAttribute<TextAttribute>() != null;
         var fieldName = context.IndexFieldName;

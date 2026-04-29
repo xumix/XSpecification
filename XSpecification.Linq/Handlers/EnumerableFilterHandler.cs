@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Frozen;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -12,9 +13,7 @@ namespace XSpecification.Linq.Handlers;
 
 public class EnumerableFilterHandler : IFilterHandler
 {
-    private readonly ILogger<EnumerableFilterHandler> _logger;
-
-    private static readonly IDictionary<string, MethodInfo> TypeMethods =
+    private static readonly FrozenDictionary<string, MethodInfo> TypeMethods =
         new Dictionary<string, MethodInfo>
         {
             {
@@ -22,8 +21,10 @@ public class EnumerableFilterHandler : IFilterHandler
                                              .GetMethods()
                                              .First(m => m.Name == nameof(Enumerable.Contains) &&
                                                          m.GetParameters().Length == 2)
-            }
-        };
+            },
+        }.ToFrozenDictionary(StringComparer.Ordinal);
+
+    private readonly ILogger<EnumerableFilterHandler> _logger;
 
     public EnumerableFilterHandler(ILogger<EnumerableFilterHandler> logger)
     {
@@ -33,6 +34,9 @@ public class EnumerableFilterHandler : IFilterHandler
     /// <inheritdoc />
     public virtual void Handle<TModel>(LinqFilterContext<TModel> context, Action<LinqFilterContext<TModel>> next)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
         var ret = GetExpression<TModel>(context);
         if (ret != default)
         {
@@ -46,12 +50,14 @@ public class EnumerableFilterHandler : IFilterHandler
 
     public virtual bool CanHandle<TModel>(LinqFilterContext<TModel> context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         var value = context.FilterPropertyValue!;
         return value is IEnumerable && value is not string && value is not IListFilter;
     }
 
     protected internal static Expression<Func<TModel, bool>> GetExpression<TModel>(Context context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         var propAccessor = context.ModelPropertyExpression!;
         var propertyType = context.ModelProperty!.PropertyType;
         var enumerable = (IEnumerable)context.FilterPropertyValue!;
@@ -59,7 +65,7 @@ public class EnumerableFilterHandler : IFilterHandler
         // Check if the property type is the same as the filter type
         var castedValue = enumerable.ToArray(propertyType);
         var constant =
-            ExpressionExtensions.CreateClousre(castedValue, typeof(IEnumerable<>).MakeGenericType(propertyType));
+            ExpressionExtensions.CreateClosure(castedValue, typeof(IEnumerable<>).MakeGenericType(propertyType));
 
         var containsMethod = TypeMethods[nameof(Enumerable.Contains)];
         Expression body =

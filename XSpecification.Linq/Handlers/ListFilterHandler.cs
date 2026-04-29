@@ -19,6 +19,9 @@ public class ListFilterHandler : IFilterHandler
     /// <inheritdoc />
     public virtual void Handle<TModel>(LinqFilterContext<TModel> context, Action<LinqFilterContext<TModel>> next)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
+
         var ret = GetExpression(context);
         if (ret != default)
         {
@@ -31,6 +34,8 @@ public class ListFilterHandler : IFilterHandler
 
     public virtual bool CanHandle<TModel>(LinqFilterContext<TModel> context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         if (!typeof(IListFilter).IsAssignableFrom(context.FilterProperty!.PropertyType))
         {
             return false;
@@ -41,6 +46,7 @@ public class ListFilterHandler : IFilterHandler
 
     protected static Expression<Func<TModel, bool>>? GetExpression<TModel>(LinqFilterContext<TModel> context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         var propAccessor = context.ModelPropertyExpression!;
         var value = (IListFilter)context.FilterPropertyValue!;
 
