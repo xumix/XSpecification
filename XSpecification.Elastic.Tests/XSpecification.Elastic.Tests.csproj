@@ -7,28 +7,28 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AutoFixture.NUnit4" Version="4.19.0" />
-        <PackageReference Include="FluentAssertions" Version="8.9.0" />
-        <PackageReference Include="FluentAssertions.Analyzers" Version="0.34.1">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        <PackageReference Include="AutoFixture.NUnit4" />
+        <PackageReference Include="FluentAssertions" />
+        <PackageReference Include="FluentAssertions.Analyzers">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.7" />
-        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.7" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.7" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="10.0.7" />
-        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
-        <PackageReference Include="NSubstitute" Version="5.3.0" />
-        <PackageReference Include="NUnit" Version="4.5.1" />
-        <PackageReference Include="NUnit3TestAdapter" Version="6.2.0" />
-        <PackageReference Include="coverlet.collector" Version="10.0.0">
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+        <PackageReference Include="Microsoft.Extensions.Logging" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Debug" />
+        <PackageReference Include="Microsoft.NET.Test.Sdk" />
+        <PackageReference Include="NSubstitute" />
+        <PackageReference Include="NUnit" />
+        <PackageReference Include="NUnit3TestAdapter" />
+        <PackageReference Include="coverlet.collector">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\XSpecification.Elasticsearch\XSpecification.Elasticsearch.csproj" />
+        <ProjectReference Include="..\XSpecification.Elasticsearch\XSpecification.Elasticsearch.csproj" />
     </ItemGroup>
 
 </Project>

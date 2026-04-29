@@ -1,5 +1,5 @@
 <Project>
-  <PropertyGroup>
+  <PropertyGroup Label="Package metadata">
     <Authors>xumix</Authors>
     <Description>XSpecification is an implementation of Specification pattern for Linq and Elasticsearch</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
@@ -7,13 +7,110 @@
     <RepositoryUrl>https://github.com/xumix/XSpecification</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>specification;linq;elasticsearch;filter;efcore;ddd;query;predicate</PackageTags>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Compiler">
     <LangVersion>latest</LangVersion>
-    <NoWarn>$(NoWarn);NU1605;NU1107;CA1711;CS1591;CA2227;CA1008;CA1056;CA1716;CA1062;CA1822;CS1591;SA0001;DV2001;CA1724;NU1008;NU1507;CA1031;CA1819;CA1720;CA2234;CA1014;CS1574;</NoWarn>
-    <WarningsAsErrors>CS0649;CS0169</WarningsAsErrors>
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <AnalysisMode>AllEnabledByDefault</AnalysisMode>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!--
+      The repo-level StyleCop.Analyzers.ruleset escalates many SA rules to Error,
+      which conflicts with the gradual style cleanup planned in Phase 2. We rely
+      on the unified <NoWarn> list below + stylecop.json for now.
+    -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
-  <ItemGroup>
-    <None Include="..\README.md" Pack="true" PackagePath="\"/>
+
+  <PropertyGroup Label="Reproducible / SourceLink">
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true' or '$(TF_BUILD)' == 'true'">true</ContinuousIntegrationBuild>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <DebugType>portable</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Diagnostics">
+    <!--
+      Suppression list. The intent is to remove most of these suppressions during Phase 2 of the
+      modernization roadmap (after the actual code is updated).
+        NU1605/NU1107/NU1008/NU1507 - downgrade / floating version analyzer noise on multi-target packages
+        CS1591 - missing XML doc on public members (gradual rollout of XML docs)
+        SA0001 - StyleCop XML doc analysis disabled to keep CI light
+        DV2001 - dotnet validate noise
+        CA1062 - argument null checks; will be added back in Phase 2
+        CA1305 - IFormatProvider; logging strings, low risk
+        CA1711 - identifiers shouldn't have type names (Filter, Specification)
+        CA1716 - reserved keywords; intentional naming
+        CA1720 - identifiers shouldn't contain type names
+        CA1724 - type names matching namespace
+        CA1819 - properties shouldn't return arrays; current public API uses arrays
+        CA1822 - members can be marked static; mostly false positives on virtuals
+        CA1031 - generic catch; intentional in pipeline error handling
+        CA1014 - assembly should be marked CLSCompliant
+        CA1056 - URI parameters as string
+        CA1008 - enum should have zero value
+        CA2227 - collection properties should be read-only; design decision
+        CA2234 - URI overloads
+        CS1574 - XML cref to non-existent symbol
+      Phase 1 additions (analyzer noise expected to be addressed in Phase 2):
+        CA1305 - IFormatProvider in logging templates / Convert.ToDouble (Elasticsearch)
+        CA1812 - internal class never instantiated (FilterHandlerPipeline created via DI)
+        CA1848 - LoggerMessage source-generator pattern (will adopt in Phase 2)
+        CA1852 - sealable internal types (will be cleaned up in Phase 2)
+        CA1859 - concrete dictionary types (will be cleaned up in Phase 2)
+        CA1860 - Count vs Any() (will be cleaned up in Phase 2)
+        CA2254 - logging template should not vary (will be cleaned up in Phase 2)
+        CS8618 - non-nullable property without ctor init (QueryContext.IndexFieldName)
+      StyleCop noise (deferred until full code-style pass in Phase 2/3):
+        SA1101 - prefix this. (off in stylecop.json, kept here for safety)
+        SA1633 - file header
+        SA1200 - using directives placement
+        SA1201 - elements should appear in correct order
+        SA1202 - elements should be ordered by access
+        SA1208 - System using directives first
+        SA1210 - using directives ordered alphabetically
+        SA1309 - field names should not begin with underscore
+        SA1413 - trailing comma in initializers
+        SA1503 - braces should not be omitted
+        SA1500 - braces for multi-line statements should not share line
+        SA1502 - elements should not be on a single line
+        SA1124 - do not use regions
+        SA1402 - file may only contain one type
+        SA1404 - code analysis suppression should have justification
+        SA1648 - inheritdoc must be used with inheriting class
+        SA1614/SA1615/SA1616/SA1622/SA1629 - documentation rules
+        SA1604/SA1605/SA1606/SA1607/SA1608/SA1609/SA1610/SA1611/SA1612/SA1613/SA1618 - documentation rules
+        SA1623 - property doc text
+        SA1642/SA1643 - constructor/destructor doc
+        SA1649 - file name match type
+        SA1117 - parameters on same line or separate lines
+        SA1305 - hungarian notation
+        SA1313 - parameter naming
+    -->
+    <NoWarn>$(NoWarn);NU1605;NU1107;NU1008;NU1507;CS1591;SA0001;DV2001;CA1002;CA1010;CA1040;CA1062;CA1200;CA1305;CA1510;CA1710;CA1711;CA1716;CA1720;CA1724;CA1819;CA1822;CA1031;CA1014;CA1056;CA1008;CA2225;CA2227;CA2234;CS1574;CA1812;CA1848;CA1852;CA1859;CA1860;CA2254;CS8618;SA1005;SA1101;SA1633;SA1200;SA1201;SA1202;SA1203;SA1204;SA1205;SA1206;SA1207;SA1208;SA1209;SA1210;SA1211;SA1212;SA1213;SA1214;SA1216;SA1217;SA1302;SA1304;SA1309;SA1413;SA1503;SA1500;SA1502;SA1124;SA1402;SA1404;SA1648;SA1614;SA1615;SA1616;SA1622;SA1629;SA1604;SA1605;SA1606;SA1607;SA1608;SA1609;SA1610;SA1611;SA1612;SA1613;SA1618;SA1623;SA1642;SA1643;SA1649;SA1117;SA1305;SA1313;SA1128;SA1009;SA1010;SA1011;SA1012;SA1013;SA1024;SA1025;SA1027;SA1028;SA1107;SA1108;SA1110;SA1111;SA1112;SA1113;SA1114;SA1115;SA1116;SA1118;SA1119;SA1120;SA1121;SA1122;SA1123;SA1125;SA1126;SA1127;SA1129;SA1130;SA1131;SA1132;SA1133;SA1134;SA1136;SA1137;SA1139;SA1141;SA1142;SA1300;SA1306;SA1307;SA1308;SA1310;SA1311;SA1312;SA1314;SA1316;SA1400;SA1401;SA1403;SA1405;SA1406;SA1407;SA1408;SA1409;SA1410;SA1411;SA1412;SA1414;SA1500;SA1501;SA1504;SA1505;SA1506;SA1507;SA1508;SA1509;SA1510;SA1511;SA1512;SA1513;SA1514;SA1515;SA1516;SA1517;SA1518;SA1519;SA1520;SA1600;SA1601;SA1602;SA1619;SA1620;SA1621;SA1624;SA1625;SA1626;SA1627;SA1628;SA1630;SA1631;SA1632;SA1634;SA1635;SA1636;SA1637;SA1638;SA1639;SA1640;SA1641;SA1644;SA1645;SA1646;SA1647;SA1650;SA1651;SA1652</NoWarn>
+    <WarningsAsErrors>CS0649;CS0169</WarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup Label="Source root files included in every package">
+    <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup Label="StyleCop config" Condition="Exists('$(MSBuildThisFileDirectory)stylecop.json')">
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" Link="stylecop.json" />
+  </ItemGroup>
+
+  <ItemGroup Label="SourceLink and analyzers (added to all projects)">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
+    <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Roslynator.Analyzers" PrivateAssets="all">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 </Project>

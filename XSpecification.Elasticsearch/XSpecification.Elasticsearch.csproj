@@ -8,24 +8,22 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Elasticsearch.Net" Version="7.17.5" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.4" />
-        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.2" />
-        <PackageReference Include="NEST" Version="7.17.5" />
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+        <PackageReference Include="Elasticsearch.Net" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+        <PackageReference Include="NEST" />
+        <PackageReference Include="Newtonsoft.Json" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\XSpecification.Core\XSpecification.Core.csproj" />
     </ItemGroup>
+
     <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
         <ItemGroup>
             <TfmSpecificPackageFile Include="$(OutputPath)\XSpecification.Core.dll">
                 <PackagePath>$(PackagePathDir)\lib\$(TargetFramework)</PackagePath>
             </TfmSpecificPackageFile>
         </ItemGroup>
-        <!--        <ItemGroup>-->
-        <!--            <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))"/>-->
-        <!--        </ItemGroup>-->
     </Target>
 </Project>

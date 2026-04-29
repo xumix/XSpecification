@@ -8,23 +8,21 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Linq.Expression.Optimizer" Version="1.0.35" />
-        <PackageReference Include="LinqKit.Core" Version="1.2.11" />
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.7" />
-        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.7" />
+        <PackageReference Include="Linq.Expression.Optimizer" />
+        <PackageReference Include="LinqKit.Core" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
     </ItemGroup>
 
     <ItemGroup>
         <ProjectReference Include="..\XSpecification.Core\XSpecification.Core.csproj" />
     </ItemGroup>
+
     <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
         <ItemGroup>
             <TfmSpecificPackageFile Include="$(OutputPath)\XSpecification.Core.dll">
                 <PackagePath>$(PackagePathDir)\lib\$(TargetFramework)</PackagePath>
             </TfmSpecificPackageFile>
         </ItemGroup>
-        <!--        <ItemGroup>-->
-        <!--            <BuildOutputInPackage Include="@(ReferenceCopyLocalPaths->WithMetadataValue('ReferenceSourceTarget', 'ProjectReference'))"/>-->
-        <!--        </ItemGroup>-->
     </Target>
 </Project>
