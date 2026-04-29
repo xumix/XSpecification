@@ -19,7 +19,7 @@ public static class ServiceRegistrationExtensions
     {
 
         var configurator = new RegistrationConfigurator<ISpecification, ElasticFilterHandlerCollection>(services);
-        services.AddSingleton(typeof(IFilterHandlerPipeline), typeof(FilterHandlerPipeline));
+        services.AddSingleton<IFilterHandlerPipeline, FilterHandlerPipeline>();
         services.AddSingleton(configurator.FilterHandlers);
 
         configurator.FilterHandlers.AddLast(typeof(ConstantFilterHandler));

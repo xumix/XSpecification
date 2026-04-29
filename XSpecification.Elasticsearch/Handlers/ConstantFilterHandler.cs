@@ -7,9 +7,11 @@ using Nest;
 using XSpecification.Core;
 using XSpecification.Elasticsearch.Pipeline;
 
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+
 namespace XSpecification.Elasticsearch.Handlers;
 
-public class ConstantFilterHandler : IFilterHandler
+public partial class ConstantFilterHandler : IFilterHandler
 {
     private readonly ILogger<ConstantFilterHandler> _logger;
 
@@ -24,7 +26,7 @@ public class ConstantFilterHandler : IFilterHandler
         var ret = GetQuery(context);
         context.QueryContainer = context.QueryContainer && ret;
 
-        _logger.LogDebug("Created Constant expression: {Query}", ret.ToPrettyString());
+        LogCreatedConstantExpressionQuery(ret.ToPrettyString());
 
         next(context);
     }
@@ -44,4 +46,7 @@ public class ConstantFilterHandler : IFilterHandler
 
         return query;
     }
+
+    [LoggerMessage(LogLevel.Debug, "Created Constant expression: {Query}")]
+    partial void LogCreatedConstantExpressionQuery(string query);
 }

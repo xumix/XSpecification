@@ -10,10 +10,11 @@ using XSpecification.Core;
 using XSpecification.Elasticsearch.Pipeline;
 
 using Context = XSpecification.Core.Pipeline.Context;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace XSpecification.Elasticsearch.Handlers;
 
-public class EnumerableFilterHandler : IFilterHandler
+public partial class EnumerableFilterHandler : IFilterHandler
 {
     private readonly ILogger<EnumerableFilterHandler> _logger;
 
@@ -28,7 +29,7 @@ public class EnumerableFilterHandler : IFilterHandler
         var ret = GetQuery(context);
         if (ret != default)
         {
-            _logger.LogDebug("Created Enumerable expression: {Query}", ret.ToPrettyString());
+            LogCreatedEnumerableExpressionQuery(ret.ToPrettyString());
 
             context.QueryContainer = context.QueryContainer && ret;
         }
@@ -70,4 +71,7 @@ public class EnumerableFilterHandler : IFilterHandler
 
         return query;
     }
+
+    [LoggerMessage(LogLevel.Debug, "Created Enumerable expression: {Query}")]
+    partial void LogCreatedEnumerableExpressionQuery(string query);
 }

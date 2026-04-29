@@ -7,7 +7,7 @@ using XSpecification.Linq.Pipeline;
 
 namespace XSpecification.Linq.Handlers;
 
-public class ConstantFilterHandler : IFilterHandler
+public partial class ConstantFilterHandler : IFilterHandler
 {
     private readonly ILogger<ConstantFilterHandler> _logger;
 
@@ -24,7 +24,7 @@ public class ConstantFilterHandler : IFilterHandler
             context.FilterPropertyValue);
         context.Expression.And(ret);
 
-        _logger.LogDebug("Created Constant expression: {Expression}", ret.Body);
+        LogCreatedConstantExpressionExpression(ret.Body);
 
         next(context);
     }
@@ -45,4 +45,7 @@ public class ConstantFilterHandler : IFilterHandler
         var lam = (Expression<Func<TModel, bool>>)Expression.Lambda(body, propAccessor.Parameters);
         return lam;
     }
+
+    [LoggerMessage(LogLevel.Debug, "Created Constant expression: {Expression}")]
+    partial void LogCreatedConstantExpressionExpression(Expression expression);
 }

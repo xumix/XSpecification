@@ -7,9 +7,11 @@ using Nest;
 using XSpecification.Core;
 using XSpecification.Elasticsearch.Pipeline;
 
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+
 namespace XSpecification.Elasticsearch.Handlers;
 
-public class NullableFilterHandler : IFilterHandler
+public partial class NullableFilterHandler : IFilterHandler
 {
     private readonly ILogger<NullableFilterHandler> _logger;
 
@@ -24,7 +26,7 @@ public class NullableFilterHandler : IFilterHandler
         var ret = GetQuery(context);
         if (ret != default)
         {
-            _logger.LogDebug("Created Nullable expression: {Query}", ret.ToPrettyString());
+            LogCreatedNullableExpressionQuery(ret.ToPrettyString());
             context.QueryContainer = context.QueryContainer && ret;
         }
         else
@@ -71,4 +73,7 @@ public class NullableFilterHandler : IFilterHandler
 
         return query;
     }
+
+    [LoggerMessage(LogLevel.Debug, "Created Nullable expression: {Query}")]
+    partial void LogCreatedNullableExpressionQuery(string query);
 }

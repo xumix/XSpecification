@@ -8,9 +8,11 @@ using Nest;
 using XSpecification.Core;
 using XSpecification.Elasticsearch.Pipeline;
 
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+
 namespace XSpecification.Elasticsearch.Handlers;
 
-public class RangeFilterHandler : IFilterHandler
+public partial class RangeFilterHandler : IFilterHandler
 {
     private readonly ILogger<RangeFilterHandler> _logger;
 
@@ -25,7 +27,7 @@ public class RangeFilterHandler : IFilterHandler
         var ret = GetQuery(context);
         if (ret != default)
         {
-            _logger.LogDebug("Created Range query: {Query}", ret.ToPrettyString());
+            LogCreatedRangeQueryQuery(ret.ToPrettyString());
             context.QueryContainer = context.QueryContainer && ret;
         }
 
@@ -112,4 +114,7 @@ public class RangeFilterHandler : IFilterHandler
 
         return query;
     }
+
+    [LoggerMessage(LogLevel.Debug, "Created Range query: {Query}")]
+    partial void LogCreatedRangeQueryQuery(string query);
 }

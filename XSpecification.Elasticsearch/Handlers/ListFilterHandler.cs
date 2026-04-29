@@ -7,9 +7,11 @@ using Nest;
 using XSpecification.Core;
 using XSpecification.Elasticsearch.Pipeline;
 
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+
 namespace XSpecification.Elasticsearch.Handlers;
 
-public class ListFilterHandler : IFilterHandler
+public partial class ListFilterHandler : IFilterHandler
 {
     private readonly ILogger<ListFilterHandler> _logger;
 
@@ -24,7 +26,7 @@ public class ListFilterHandler : IFilterHandler
         var ret = GetQuery(context);
         if (ret != default)
         {
-            _logger.LogDebug("Created List expression: {Query}", ret.ToPrettyString());
+            LogCreatedListExpressionQuery(ret.ToPrettyString());
             context.QueryContainer = context.QueryContainer && ret;
         }
 
@@ -59,4 +61,7 @@ public class ListFilterHandler : IFilterHandler
 
         return query;
     }
+
+    [LoggerMessage(LogLevel.Debug, "Created List expression: {Query}")]
+    partial void LogCreatedListExpressionQuery(string query);
 }
