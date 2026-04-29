@@ -1,9 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <!--
+          IsTrimmable / IsAotCompatible are intentionally NOT set:
+          the runtime path uses MakeGenericMethod, GetProperties etc. The plan is to migrate
+          this to a source generator in a follow-up release; until then, the public API is annotated
+          with [RequiresDynamicCode] / [RequiresUnreferencedCode] so callers that DO enable AOT
+          get a clear warning.
+        -->
     </PropertyGroup>
 
     <ItemGroup>

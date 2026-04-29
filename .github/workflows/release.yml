@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Override package version (e.g. 1.2.3). Leave empty to use the tag.'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Pack and publish to NuGet
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            ref="${GITHUB_REF#refs/tags/}"
+            echo "version=${ref#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore
+        run: dotnet restore XSpecification.sln
+
+      - name: Build
+        run: dotnet build XSpecification.sln -c Release --no-restore -p:Version=${{ steps.ver.outputs.version }}
+
+      - name: Test
+        run: dotnet test XSpecification.sln -c Release --no-build
+
+      - name: Pack
+        run: dotnet pack XSpecification.sln -c Release --no-build -o ./artifacts -p:Version=${{ steps.ver.outputs.version }}
+
+      - name: Push to NuGet.org
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          dotnet nuget push ./artifacts/*.nupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+          dotnet nuget push ./artifacts/*.snupkg --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          generate_release_notes: true
+          files: |
+            ./artifacts/*.nupkg
+            ./artifacts/*.snupkg
