@@ -39,7 +39,7 @@
   </ItemGroup>
 
   <ItemGroup Label="EF Core (tests)">
-    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.15" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.16" />
   </ItemGroup>
 
   <ItemGroup Label="Testing">
