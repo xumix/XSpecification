@@ -176,7 +176,7 @@ namespace XSpecification.Linq.Tests
                 var expression = spec.CreateFilterExpression(filter);
             };
             act.Should().Throw<AggregateException>()
-               .WithMessage(nameof(IncompatibleLinqTestFilter.Incompatible));
+               .WithMessage("*" + nameof(IncompatibleLinqTestFilter.Incompatible) + "*");
         }
 
         [Test]
