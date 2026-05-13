@@ -156,11 +156,12 @@ namespace XSpecification.Linq.Tests
 
             var filter = new LinqTestFilter();
 
-            Assert.That(() =>
+            Assert.That<Action>(() =>
                 {
                     var expression = spec.CreateFilterExpression(filter);
                 },
-                Throws.InstanceOf<InvalidOperationException>().And.Message.Contains(nameof(LinqTestFilter.Explicit)));
+                Throws.InstanceOf<InvalidOperationException>().And.Message.Contains(nameof(LinqTestFilter.Explicit)),
+                "Unhandled fields must throw");
         }
 
         [Test]
@@ -170,18 +171,18 @@ namespace XSpecification.Linq.Tests
 
             var filter = new IncompatibleLinqTestFilter { Incompatible = new ListFilter<int> { 1, 2 } };
 
-            Assert.That(() =>
-                {
-                    var expression = spec.CreateFilterExpression(filter);
-                },
-                Throws.InstanceOf<AggregateException>()
-                      .And.Message.Contains(nameof(IncompatibleLinqTestFilter.Incompatible)));
+            var act = () =>
+            {
+                var expression = spec.CreateFilterExpression(filter);
+            };
+            act.Should().Throw<AggregateException>()
+               .WithMessage(nameof(IncompatibleLinqTestFilter.Incompatible));
         }
 
         [Test]
         public void Ensure_Validation_Throws()
         {
-            Assert.That(() =>
+            Assert.That<Action>(() =>
                 {
                     _serviceProvider.ValidateSpecifications();
                 },
