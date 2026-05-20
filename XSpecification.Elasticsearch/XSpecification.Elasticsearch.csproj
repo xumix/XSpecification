@@ -19,7 +19,6 @@
 
     <ItemGroup>
         <ProjectReference Include="..\XSpecification.Core\XSpecification.Core.csproj" />
-        <ProjectReference Include="..\XSpecification.Elasticsearch.Abstractions\XSpecification.Elasticsearch.Abstractions.csproj" />
     </ItemGroup>
 
     <Target Name="CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">

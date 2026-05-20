@@ -74,8 +74,8 @@ namespace XSpecification.Elastic.Tests
             var context = new SpecimenContext(fixture);
             for (var i = 0; i < 10; i++)
             {
-                var filter = context.Create<ElasticTestFilter>();
-                var expression = spec.CreateFilterQuery(filter);
+                var filter = context.Create<ElsaticTestFilter>();
+                spec.CreateFilterQuery(filter);
             }
         }
 
@@ -144,13 +144,10 @@ namespace XSpecification.Elastic.Tests
         {
             var spec = _serviceProvider.GetRequiredService<UnhandledTestSpec>();
 
-            var filter = new ElasticTestFilter();
+            var filter = new ElsaticTestFilter();
 
-            Assert.That(() =>
-                {
-                    var expression = spec.CreateFilterQuery(filter);
-                },
-                Throws.InstanceOf<InvalidOperationException>().And.Message.Contains(nameof(ElasticTestFilter.Explicit)));
+            Assert.That<Action>(() => { spec.CreateFilterQuery(filter); },
+                Throws.InstanceOf<InvalidOperationException>().And.Message.Contains(nameof(ElsaticTestFilter.Explicit)));
         }
 
         [Test]
@@ -158,20 +155,17 @@ namespace XSpecification.Elastic.Tests
         {
             var spec = _serviceProvider.GetRequiredService<IncompatibleLinqTestSpec>();
 
-            var filter = new IncompatibleElasticTestFilter { Incompatible = new ListFilter<int> { 1, 2 } };
+            var filter = new IncompatibleElsaticTestFilter { Incompatible = [1, 2] };
 
-            Assert.That(() =>
-                {
-                    var expression = spec.CreateFilterQuery(filter);
-                },
+            Assert.That<Action>(() => { spec.CreateFilterQuery(filter); },
                 Throws.InstanceOf<AggregateException>()
-                      .And.Message.Contains(nameof(IncompatibleElasticTestFilter.Incompatible)));
+                      .And.Message.Contains(nameof(IncompatibleElsaticTestFilter.Incompatible)));
         }
 
         [Test]
         public void Ensure_Validation_Throws()
         {
-            Assert.That(() =>
+            Assert.That<Action>(() =>
                 {
                     _serviceProvider.ValidateSpecifications();
                 },
