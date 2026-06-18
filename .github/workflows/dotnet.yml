@@ -61,7 +61,7 @@ jobs:
           path: ./TestResults/**/coverage.cobertura.xml
 
       - name: Codecov
-        uses: codecov/codecov-action@v6
+        uses: codecov/codecov-action@v7
         if: always()
         with:
           files: ./TestResults/**/coverage.cobertura.xml
